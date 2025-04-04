@@ -3,56 +3,106 @@ name: Deploy to Google Cloud Run
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: coredatastore-swagger-mcp
-  REGION: us-central1  # Change to your preferred region
+  REGION: us-east4
+  DOCKER_IMAGE_TAG: 0.0.1.${{ github.run_number }}
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/coredatastore-swagger-mcp:0.0.1.${{ github.run_number }}
 
 jobs:
-  deploy:
+  build:
+    name: Build
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build and export Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}
+          outputs: type=docker,dest=/tmp/docker-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/docker-image.tar
+          retention-days: 1
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+        
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/docker-image.tar
+          docker images
 
       - name: Google Auth
         id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
+      
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
-
+      
       - name: Configure Docker
         run: gcloud auth configure-docker
-
-      - name: Build and Push Docker image
-        run: |
-          IMAGE_NAME=gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
-
+      
+      - name: Push Docker image to Google Container Registry
+        run: docker push ${{ env.IMAGE_NAME }}
+  
+  deploy:
+    name: Deploy
+    needs: publish
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    steps:
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          image: ${{ env.IMAGE_NAME }}
           env_vars: |
             SWAGGER_URL=https://api.coredatastore.com/swagger/v1/swagger.json
             API_BASE_URL=https://api.coredatastore.com
-
+      
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
