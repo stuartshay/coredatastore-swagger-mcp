@@ -11,7 +11,7 @@ env:
   SERVICE_NAME: coredatastore-swagger-mcp
   REGION: us-east4
   DOCKER_IMAGE_TAG: 0.0.1.${{ github.run_number }}
-  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/coredatastore-swagger-mcp:0.0.1.${{ github.run_number }}
+  IMAGE_NAME: us-east4-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/coredatastore/coredatastore-swagger-mcp:0.0.1.${{ github.run_number }}
   ARTIFACT_REGISTRY_HOST: us-east4-docker.pkg.dev
 
 
@@ -70,13 +70,25 @@ jobs:
 
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY_HOST }}
+        
+      - name: Create Artifact Registry Repository if it doesn't exist
+        run: |
+          if ! gcloud artifacts repositories describe coredatastore --location=${{ env.REGION }} 2>/dev/null; then
+            echo "Creating Artifact Registry repository 'coredatastore'..."
+            gcloud artifacts repositories create coredatastore \
+              --repository-format=docker \
+              --location=${{ env.REGION }} \
+              --description="Repository for CoreDataStore MCP"
+          else
+            echo "Repository 'coredatastore' already exists."
+          fi
 
       - name: Load Docker image
         run: |
           docker load --input /tmp/docker-image.tar
           docker images
 
-      - name: Push Docker image to Google Container Registry
+      - name: Push Docker image to Artifact Registry
         run: docker push ${{ env.IMAGE_NAME }}
   
   deploy:
@@ -107,4 +119,4 @@ jobs:
             API_BASE_URL=https://api.coredatastore.com
       
       - name: Show Output
-        run: echo ${{ steps.deploy.outputs.url }}
+        run: echo "${{ steps.deploy.outputs.url }}"
