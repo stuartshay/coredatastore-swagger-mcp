@@ -10,6 +10,18 @@ We are currently focusing on fixing the GitHub Actions deployment workflow. The 
    - Created `.vscode/extensions.json` with recommended extensions for this project
    - Added ESLint configuration (`.eslintrc.json`) aligned with project's coding standards
    - Added Prettier configuration (`.prettierrc`) for consistent code formatting
+   - Added EditorConfig (`.editorconfig`) for editor-agnostic style definitions
+   - Added JavaScript configuration (`jsconfig.json`) for better IntelliSense
+
+2. **Code Quality Tooling Enhancements**:
+   - Using ESLint version 8.57.0 (compatible with .eslintrc.json configuration)
+   - Added Prettier version 3.2.5 for code formatting
+   - Added Husky and lint-staged for Git hooks
+   - Created script for setting up pre-commit hooks (`scripts/setup-git-hooks.sh`)
+   - Created script for code formatting and linting (`scripts/format-code.sh`)
+   - Added npm scripts for linting and formatting tasks
+   - Fixed dependency loop issue in Git hooks and formatting scripts
+   - Separated Git hooks setup from npm prepare lifecycle to prevent loops
 
 2. **GitHub Actions Workflow Update**: We've modified the deployment workflow to use Google Artifact Registry consistently instead of mixing Container Registry and Artifact Registry references.
    - Changed image name format from `gcr.io/PROJECT_ID/...` to `us-east4-docker.pkg.dev/PROJECT_ID/coredatastore/...`
@@ -27,7 +39,7 @@ We are currently focusing on fixing the GitHub Actions deployment workflow. The 
    This was caused by a mismatch between the Docker authentication configuration (for Artifact Registry) and the image name format (for Container Registry).
 
 ## Next Steps
-1. **Apply ESLint and Prettier to Codebase**: With the new configuration files in place, we should run formatting and linting on the existing code to ensure consistency.
+1. ~~**Apply ESLint and Prettier to Codebase**~~: Formatting and linting has been successfully applied to the codebase.
 
 2. **Verify Deployment Success**: After the workflow changes, we need to verify that the deployment succeeds without authentication errors.
 

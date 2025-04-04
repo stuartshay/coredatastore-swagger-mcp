@@ -36,8 +36,8 @@ This MCP server connects to the [CoreDataStore API](https://api.coredatastore.co
 git clone https://github.com/stuartshay/coredatastore-swagger-mcp.git
 cd coredatastore-swagger-mcp
 
-# Install dependencies
-npm install
+# Quick setup (installs dependencies and configures everything)
+./scripts/setup-dev.sh
 
 # Make the entry point executable
 chmod +x ./src/index.js
@@ -45,6 +45,17 @@ chmod +x ./src/index.js
 # Start the server
 npm start
 ```
+
+For a clean installation (if you're experiencing dependency issues):
+```bash
+./scripts/setup-dev.sh --clean
+```
+
+The setup script will:
+- Install all dependencies
+- Verify ESLint and Prettier are correctly installed
+- Set up Git hooks for pre-commit code quality checks
+- Make sure everything is ready for development
 
 ### Environment Variables
 
@@ -127,7 +138,7 @@ gcloud run deploy coredatastore-swagger-mcp \
 ## Development
 
 ```bash
-# Install dependencies including dev dependencies
+# Important: Install dependencies first
 npm install
 
 # Run in development mode with hot reloading
@@ -147,7 +158,26 @@ npm run format:check
 
 # Run both linting and formatting
 npm run format:all
+
+# Set up Git hooks
+npm run hooks:setup
 ```
+
+> **Note:** If you encounter any dependency issues or things aren't working correctly,
+> run `./scripts/setup-dev.sh --clean` to clean your installation and reinstall everything.
+> This script will ensure all tools are properly installed and configured.
+
+### Git Hooks
+
+This project uses Husky and lint-staged to enforce code quality on commit:
+
+1. **Pre-commit Hook**: Automatically runs ESLint and Prettier on staged files
+2. **Setup**: Run `npm run hooks:setup` to set up the Git hooks
+
+The pre-commit hook ensures that:
+- Code is properly formatted with Prettier
+- ESLint rules are enforced
+- No code quality issues are committed
 
 ### VSCode Setup
 

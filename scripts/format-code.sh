@@ -6,21 +6,20 @@ echo "=== CoreDataStore Swagger MCP Formatter ==="
 echo "This script will format and lint the codebase."
 echo ""
 
-# Make sure we have all dependencies
-echo "Ensuring dependencies are installed..."
-npm install
+# Do NOT run npm install here as it can cause a loop with the prepare script
+# If dependencies are missing, the user should run npm install separately
 
 # Run ESLint first to check for issues
 echo "Running ESLint to check for issues..."
-npx eslint src/ --ext .js
+npx --no-install eslint src/ --ext .js
 
 # Run ESLint with --fix flag to automatically fix what it can
 echo "Running ESLint with auto-fix..."
-npx eslint src/ --ext .js --fix
+npx --no-install eslint src/ --ext .js --fix
 
 # Run Prettier on all JavaScript files
 echo "Running Prettier on JavaScript files..."
-npx prettier --write "src/**/*.js"
+npx --no-install prettier --write "src/**/*.js"
 
 # Display completion message
 echo ""
