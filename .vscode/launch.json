@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/src/index.js",
+      "runtimeArgs": ["--experimental-modules"],
+      "env": {
+        "SWAGGER_URL": "https://api.coredatastore.com/swagger/v1/swagger.json",
+        "API_BASE_URL": "https://api.coredatastore.com",
+        "PORT": "3500"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch with Nodemon",
+      "runtimeExecutable": "nodemon",
+      "program": "${workspaceFolder}/src/index.js",
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "SWAGGER_URL": "https://api.coredatastore.com/swagger/v1/swagger.json",
+        "API_BASE_URL": "https://api.coredatastore.com",
+        "PORT": "3500"
+      }
+    }
+  ]
+}

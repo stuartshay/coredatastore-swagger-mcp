@@ -12,7 +12,8 @@ import express from 'express';
 
 // Default configuration
 const DEFAULT_PORT = 3500;
-const SWAGGER_URL = process.env.SWAGGER_URL || 'https://api.coredatastore.com/swagger/v1/swagger.json';
+const SWAGGER_URL =
+  process.env.SWAGGER_URL || 'https://api.coredatastore.com/swagger/v1/swagger.json';
 const API_PORT = process.env.PORT || DEFAULT_PORT;
 const API_BASE_URL = process.env.API_BASE_URL || 'https://api.coredatastore.com';
 
@@ -43,7 +44,7 @@ class SwaggerMCPServer {
     this.setupHandlers();
 
     // Error handling
-    this.server.onerror = (error) => console.error('[MCP Error]', error);
+    this.server.onerror = error => console.error('[MCP Error]', error);
     process.on('SIGINT', async () => {
       await this.server.close();
       process.exit(0);
@@ -69,7 +70,9 @@ class SwaggerMCPServer {
       // Setup proxy endpoints in Express after we have swagger spec
       this.setupExpressProxy();
 
-      console.error(`[SwaggerMCP] Successfully loaded specification with ${Object.keys(this.paths).length} paths`);
+      console.error(
+        `[SwaggerMCP] Successfully loaded specification with ${Object.keys(this.paths).length} paths`
+      );
       console.error(`[SwaggerMCP] API Server listening on port ${API_PORT}`);
 
       // Start the Express server
@@ -94,8 +97,8 @@ class SwaggerMCPServer {
 
         const response = await fetch(targetUrl, {
           headers: {
-            'Accept': 'application/json'
-          }
+            Accept: 'application/json',
+          },
         });
 
         const data = await response.json();
@@ -109,8 +112,8 @@ class SwaggerMCPServer {
     // Add generic fallback proxy for other routes
     this.app.use('/api', (req, res) => {
       res.status(404).json({
-        error: "Endpoint not configured in proxy",
-        message: "This endpoint hasn't been explicitly configured in the swagger-mcp proxy"
+        error: 'Endpoint not configured in proxy',
+        message: "This endpoint hasn't been explicitly configured in the swagger-mcp proxy",
       });
     });
   }
@@ -124,7 +127,7 @@ class SwaggerMCPServer {
     });
 
     // Handle tool call requests
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
 
       try {
@@ -132,10 +135,7 @@ class SwaggerMCPServer {
         const tool = this.tools.find(t => t.name === name);
 
         if (!tool) {
-          throw new McpError(
-            ErrorCode.MethodNotFound,
-            `Tool not found: ${name}`
-          );
+          throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
         }
 
         // Get path and method from tool metadata
@@ -143,10 +143,7 @@ class SwaggerMCPServer {
         const method = tool.metadata?.method;
 
         if (!path || !method) {
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Invalid tool metadata for: ${name}`
-          );
+          throw new McpError(ErrorCode.InternalError, `Invalid tool metadata for: ${name}`);
         }
 
         // Prepare URL with path parameters
@@ -183,7 +180,7 @@ class SwaggerMCPServer {
           method: method.toUpperCase(),
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
         };
 
@@ -243,7 +240,8 @@ class SwaggerMCPServer {
         }
 
         // Create a tool name based on operation ID or path
-        const operationId = operation.operationId || `${method}_${path.replace(/\//g, '_').replace(/[{}]/g, '')}`;
+        const operationId =
+          operation.operationId || `${method}_${path.replace(/\//g, '_').replace(/[{}]/g, '')}`;
 
         // Create an input schema based on parameters and request body
         const properties = {};
@@ -305,7 +303,8 @@ class SwaggerMCPServer {
         // Create the tool
         const tool = {
           name: operationId,
-          description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
+          description:
+            operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
           inputSchema: {
             type: 'object',
             properties,

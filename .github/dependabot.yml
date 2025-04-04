@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: "/"
+    # Check for updates once a week (on Monday)
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # Allow up to 10 open pull requests at a time
+    open-pull-requests-limit: 10
+    # Apply security updates immediately
+    labels:
+      - "npm"
+      - "dependencies"
+    # Set reviewers for pull requests
+    reviewers:
+      - "stuartshay"
+
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "github-actions"
+      - "dependencies"
+    reviewers:
+      - "stuartshay"
