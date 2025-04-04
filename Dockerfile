@@ -3,9 +3,13 @@ FROM node:20-alpine
 # Create app directory
 WORKDIR /app
 
+# Set npm configurations to avoid issues
+RUN npm config set registry https://registry.npmjs.org/
+RUN npm config set fetch-retry-maxtimeout 300000
+
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --production
 
 # Copy application code
 COPY . .
@@ -20,7 +24,7 @@ ENV SWAGGER_URL=https://api.coredatastore.com/swagger/v1/swagger.json
 ENV API_BASE_URL=https://api.coredatastore.com
 
 # Expose port
-EXPOSE 3500
+EXPOSE ${PORT}
 
 # Set user to non-root for security
 USER node
