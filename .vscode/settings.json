@@ -1,0 +1,50 @@
+{
+  // Editor settings
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  
+  // JavaScript settings
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "javascript.format.enable": false, // Let Prettier handle formatting
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "javascript.suggestionActions.enabled": true,
+  
+  // ESLint settings
+  "eslint.validate": ["javascript"],
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.format.enable": true,
+  
+  // Files settings
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  
+  // Terminal settings
+  "terminal.integrated.defaultProfile.linux": "zsh",
+  
+  // Docker settings
+  "docker.imageBuildContextPath": ".",
+  
+  // Search exclude
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true
+  },
+  
+  // Files to exclude from explorer
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true
+  },
+  
+  // Telemetry settings
+  "telemetry.telemetryLevel": "off"
+}

@@ -135,7 +135,40 @@ npm run dev
 
 # Run linting
 npm run lint
+
+# Run linting with auto-fix
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+
+# Check if files are formatted correctly
+npm run format:check
+
+# Run both linting and formatting
+npm run format:all
 ```
+
+### VSCode Setup
+
+This project includes VSCode configuration files to enhance your development experience:
+
+- **Settings**: Preconfigured editor settings for consistent code style
+- **Launch Configurations**: Debug configurations for the Node.js application
+- **Extensions**: Recommended extensions for JavaScript/Node.js development
+
+#### Recommended Extensions
+
+Install the recommended extensions to get the best development experience:
+
+- **ESLint**: JavaScript linting
+- **Prettier**: Code formatting
+- **Docker**: Container support
+- **OpenAPI (Swagger) Editor**: API specification editing
+- **GitLens**: Enhanced Git capabilities
+- **GitHub Actions**: Workflow visualization
+
+Simply open the Extensions view in VSCode and search for `@recommended` to see all the recommended extensions for this project.
 
 ## Architecture
 

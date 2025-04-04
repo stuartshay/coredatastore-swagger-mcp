@@ -1,0 +1,91 @@
+# CoreDataStore Swagger MCP Project Rules
+
+## Project Patterns
+
+### Naming Conventions
+- Use camelCase for variable and function names in JavaScript
+- Use PascalCase for class names
+- Use kebab-case for file names
+- Prefix private class members with underscore (_)
+
+### Code Organization
+- ES Modules syntax (import/export) is used throughout the project
+- Main server class is SwaggerMCPServer
+- Express router setup is handled in setupExpressProxy method
+- MCP handlers are set up in setupHandlers method
+- Tool generation occurs in buildTools method
+
+### Workflow Conventions
+- GitHub Actions workflow uses separate jobs for build, publish, and deploy
+- Docker images are tagged with version prefix and GitHub run number
+- Artifact Registry is used for Docker image storage (preferred over Container Registry)
+- Project uses us-east4 region for all GCP resources
+
+### Environment Variables
+- SWAGGER_URL: URL to Swagger specification
+- API_BASE_URL: Base URL for CoreDataStore API
+- PORT: Express server port
+
+### Google Cloud Specifics
+- Project ID: velvety-byway-327718
+- Service Account: gh-actions-navigator@velvety-byway-327718.iam.gserviceaccount.com
+- Cloud Run Service Name: coredatastore-swagger-mcp
+- Artifact Registry Repository: coredatastore
+
+## Troubleshooting Guidelines
+
+### GitHub Actions Issues
+- Check service account permissions in GCP IAM
+- Verify workflow YAML syntax with GitHub Actions validator
+- Ensure GCP_PROJECT_ID and GCP_SA_KEY secrets are properly set
+- Confirm Artifact Registry repository exists or is created in workflow
+
+### Docker Issues
+- Verify proper Node.js version in Dockerfile (20-alpine)
+- Ensure all dependencies are properly installed
+- Check environment variable configuration
+
+### MCP Server Issues
+- Verify Swagger specification URL is accessible
+- Check for proper error handling in tool execution
+- Ensure StdioServerTransport is initialized correctly
+
+### Express Server Issues
+- Verify port configuration and availability
+- Check proxy endpoint implementations
+- Ensure proper error handling middleware
+
+## Development Practices
+
+### Testing
+- Manually test health endpoint at /health
+- Verify tool listing with MCP client
+- Test tool execution for key endpoints
+- Test API proxy functionality
+
+### Deployment
+- Test local Docker build before pushing changes
+- Prefer manual workflow dispatch for controlled deployments
+- Monitor Google Cloud Run logs after deployment
+- Verify Cloud Run service is accessible after deployment
+
+### Documentation
+- Update Memory Bank files when making significant changes
+- Document new environment variables in README.md
+- Add example usage for new features
+- Document API endpoints in README.md
+
+## Project Intelligence
+
+### Critical Implementation Paths
+1. SwaggerMCPServer.init() -> Fetch and parse Swagger specification
+2. SwaggerMCPServer.buildTools() -> Generate MCP tools from specification
+3. SwaggerMCPServer.setupHandlers() -> Configure MCP request handlers
+4. SwaggerMCPServer.setupExpressProxy() -> Set up Express routes
+5. SwaggerMCPServer.run() -> Start both MCP and Express servers
+
+### Common Challenges
+- Complex Swagger schemas may not map cleanly to MCP tool input schemas
+- Error handling between MCP protocol and API needs careful translation
+- Authentication between GitHub Actions and Google Cloud services
+- Docker configuration for Node.js ES Module projects
