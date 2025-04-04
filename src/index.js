@@ -1,0 +1,353 @@
+#!/usr/bin/env node
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ErrorCode,
+  ListToolsRequestSchema,
+  McpError,
+} from '@modelcontextprotocol/sdk/types.js';
+import fetch from 'node-fetch';
+import express from 'express';
+
+// Default configuration
+const DEFAULT_PORT = 3500;
+const SWAGGER_URL = process.env.SWAGGER_URL || 'https://api.coredatastore.com/swagger/v1/swagger.json';
+const API_PORT = process.env.PORT || DEFAULT_PORT;
+const API_BASE_URL = process.env.API_BASE_URL || 'https://api.coredatastore.com';
+
+class SwaggerMCPServer {
+  constructor() {
+    this.server = new Server(
+      {
+        name: 'coredatastore-swagger-mcp',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
+
+    this.tools = [];
+    this.paths = {};
+    this.schemas = {};
+    this.swaggerSpec = null;
+
+    // Create Express server for local API queries
+    this.app = express();
+    this.app.use(express.json());
+
+    // Setup MCP handlers
+    this.setupHandlers();
+
+    // Error handling
+    this.server.onerror = (error) => console.error('[MCP Error]', error);
+    process.on('SIGINT', async () => {
+      await this.server.close();
+      process.exit(0);
+    });
+  }
+
+  async init() {
+    try {
+      console.error(`[SwaggerMCP] Fetching Swagger specification from: ${SWAGGER_URL}`);
+      const response = await fetch(SWAGGER_URL);
+      this.swaggerSpec = await response.json();
+
+      if (!this.swaggerSpec || !this.swaggerSpec.paths) {
+        throw new Error('Invalid Swagger specification');
+      }
+
+      this.paths = this.swaggerSpec.paths;
+      this.schemas = this.swaggerSpec.components?.schemas || {};
+
+      // Parse the specification and build tools
+      await this.buildTools();
+
+      // Setup proxy endpoints in Express after we have swagger spec
+      this.setupExpressProxy();
+
+      console.error(`[SwaggerMCP] Successfully loaded specification with ${Object.keys(this.paths).length} paths`);
+      console.error(`[SwaggerMCP] API Server listening on port ${API_PORT}`);
+
+      // Start the Express server
+      this.startExpressServer();
+    } catch (error) {
+      console.error(`[SwaggerMCP] Error initializing: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
+  setupExpressProxy() {
+    // Add a proxy middleware for specific API endpoints
+    // Instead of using a wildcard route pattern that might cause path-to-regexp errors
+
+    // Add a specific route for LP reports by ID
+    this.app.get('/api/LpcReport/:lpcId', async (req, res) => {
+      try {
+        const lpcId = req.params.lpcId;
+        const targetUrl = `${API_BASE_URL}/api/LpcReport/${lpcId}`;
+
+        console.error(`[SwaggerMCP] Proxying request to: GET ${targetUrl}`);
+
+        const response = await fetch(targetUrl, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        res.json(data);
+      } catch (error) {
+        console.error(`[SwaggerMCP] Proxy error: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Add generic fallback proxy for other routes
+    this.app.use('/api', (req, res) => {
+      res.status(404).json({
+        error: "Endpoint not configured in proxy",
+        message: "This endpoint hasn't been explicitly configured in the swagger-mcp proxy"
+      });
+    });
+  }
+
+  setupHandlers() {
+    // Handle tool listing requests
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      return {
+        tools: this.tools,
+      };
+    });
+
+    // Handle tool call requests
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+
+      try {
+        // Find the tool definition
+        const tool = this.tools.find(t => t.name === name);
+
+        if (!tool) {
+          throw new McpError(
+            ErrorCode.MethodNotFound,
+            `Tool not found: ${name}`
+          );
+        }
+
+        // Get path and method from tool metadata
+        const path = tool.metadata?.path;
+        const method = tool.metadata?.method;
+
+        if (!path || !method) {
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Invalid tool metadata for: ${name}`
+          );
+        }
+
+        // Prepare URL with path parameters
+        let url = `${API_BASE_URL}${path}`;
+
+        // Replace path parameters with values from arguments
+        if (args) {
+          Object.keys(args).forEach(key => {
+            url = url.replace(`{${key}}`, args[key]);
+          });
+        }
+
+        // Add query parameters if method is GET
+        if (method.toLowerCase() === 'get' && args) {
+          const queryParams = new URLSearchParams();
+
+          Object.keys(args).forEach(key => {
+            // Only add if not a path parameter
+            if (!path.includes(`{${key}}`)) {
+              queryParams.append(key, args[key]);
+            }
+          });
+
+          const queryString = queryParams.toString();
+          if (queryString) {
+            url += `?${queryString}`;
+          }
+        }
+
+        console.error(`[SwaggerMCP] Executing API call: ${method} ${url}`);
+
+        // Execute the API call
+        const options = {
+          method: method.toUpperCase(),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        };
+
+        // Add body for non-GET methods
+        if (method.toLowerCase() !== 'get' && args) {
+          const bodyArgs = {};
+
+          // Filter out path parameters
+          Object.keys(args).forEach(key => {
+            if (!path.includes(`{${key}}`)) {
+              bodyArgs[key] = args[key];
+            }
+          });
+
+          if (Object.keys(bodyArgs).length > 0) {
+            options.body = JSON.stringify(bodyArgs);
+          }
+        }
+
+        // Make the API call
+        const response = await fetch(url, options);
+        const responseData = await response.json();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(responseData, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        console.error(`[SwaggerMCP] Error executing tool ${name}:`, error);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error executing API call: ${error.message}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    });
+  }
+
+  async buildTools() {
+    const tools = [];
+
+    // Process each path and method in the Swagger spec
+    for (const [path, pathItem] of Object.entries(this.paths)) {
+      for (const [method, operation] of Object.entries(pathItem)) {
+        // Skip non-HTTP methods
+        if (!['get', 'post', 'put', 'delete', 'patch'].includes(method)) {
+          continue;
+        }
+
+        // Create a tool name based on operation ID or path
+        const operationId = operation.operationId || `${method}_${path.replace(/\//g, '_').replace(/[{}]/g, '')}`;
+
+        // Create an input schema based on parameters and request body
+        const properties = {};
+        const required = [];
+
+        // Process path parameters
+        if (operation.parameters) {
+          operation.parameters.forEach(param => {
+            if (param.in === 'path') {
+              properties[param.name] = {
+                type: param.schema?.type || 'string',
+                description: param.description || `${param.name} parameter`,
+              };
+
+              if (param.required) {
+                required.push(param.name);
+              }
+            } else if (param.in === 'query') {
+              properties[param.name] = {
+                type: param.schema?.type || 'string',
+                description: param.description || `${param.name} query parameter`,
+              };
+
+              if (param.required) {
+                required.push(param.name);
+              }
+            }
+          });
+        }
+
+        // Process request body
+        if (operation.requestBody) {
+          const content = operation.requestBody.content;
+
+          if (content && content['application/json']) {
+            const schema = content['application/json'].schema;
+
+            if (schema.properties) {
+              // Add body properties to the input schema
+              Object.entries(schema.properties).forEach(([propName, propSchema]) => {
+                properties[propName] = {
+                  type: propSchema.type || 'string',
+                  description: propSchema.description || propName,
+                };
+              });
+
+              // Add required properties
+              if (schema.required) {
+                schema.required.forEach(prop => {
+                  if (!required.includes(prop)) {
+                    required.push(prop);
+                  }
+                });
+              }
+            }
+          }
+        }
+
+        // Create the tool
+        const tool = {
+          name: operationId,
+          description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
+          inputSchema: {
+            type: 'object',
+            properties,
+            required,
+          },
+          metadata: {
+            path,
+            method,
+            tags: operation.tags || [],
+          },
+        };
+
+        tools.push(tool);
+      }
+    }
+
+    this.tools = tools;
+    console.error(`[SwaggerMCP] Created ${tools.length} tools from Swagger specification`);
+  }
+
+  startExpressServer() {
+    // Simple health check endpoint
+    this.app.get('/health', (req, res) => {
+      res.json({ status: 'OK', tools: this.tools.length });
+    });
+
+    // Start the server
+    this.app.listen(API_PORT, () => {
+      console.error(`[SwaggerMCP] API server is running on port ${API_PORT}`);
+    });
+  }
+
+  async run() {
+    await this.init();
+
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+
+    console.error('[SwaggerMCP] MCP server running on stdio');
+  }
+}
+
+// Start the server
+const server = new SwaggerMCPServer();
+server.run().catch(console.error);

@@ -1,0 +1,46 @@
+{
+  "name": "coredatastore-swagger-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for CoreDataStore API using Swagger specification",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "coredatastore-swagger-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "lint": "eslint src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "swagger",
+    "openapi",
+    "coredatastore",
+    "api",
+    "model-context-protocol"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stuartshay/coredatastore-swagger-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stuartshay/coredatastore-swagger-mcp/issues"
+  },
+  "homepage": "https://github.com/stuartshay/coredatastore-swagger-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
