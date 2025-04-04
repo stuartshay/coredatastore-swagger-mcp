@@ -1,5 +1,8 @@
 # CoreDataStore Swagger MCP Server
 
+[![Deploy to Google Cloud Run](https://github.com/stuartshay/coredatastore-swagger-mcp/actions/workflows/deploy.yml/badge.svg)](https://github.com/stuartshay/coredatastore-swagger-mcp/actions/workflows/deploy.yml)
+
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.ai/) server that dynamically generates MCP tools from the CoreDataStore API's Swagger/OpenAPI specification. This server enables AI assistants to interact with NYC landmarks data through a standardized protocol.
 
 ## Overview
