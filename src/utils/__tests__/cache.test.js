@@ -103,11 +103,9 @@ describe('ResponseCache', () => {
   });
 
   test('should handle cleanup correctly', () => {
-    const now = Date.now();
-
     // Set items with different expiries
     cache.set('expired', 'value1', -100); // Already expired
-    cache.set('valid', 'value2', 10000);  // Valid for a while
+    cache.set('valid', 'value2', 10000); // Valid for a while
 
     // Run cleanup
     cache.cleanup();
@@ -118,11 +116,9 @@ describe('ResponseCache', () => {
   });
 
   test('should provide accurate stats', () => {
-    const now = Date.now();
-
     // Add some items
     cache.set('a', 'A', 10000); // Not expired
-    cache.set('b', 'B', -10);   // Expired
+    cache.set('b', 'B', -10); // Expired
 
     const stats = cache.stats();
 

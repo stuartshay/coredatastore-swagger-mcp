@@ -42,19 +42,19 @@ switch (bumpType.toLowerCase()) {
 packageJson.version = newVersion;
 fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
 
-console.log(`Version bumped from ${currentVersion} to ${newVersion}`);
+console.warn(`Version bumped from ${currentVersion} to ${newVersion}`);
 
 // Create a version commit
 try {
-  execSync(`git add package.json`);
+  execSync('git add package.json');
   execSync(`git commit -m "chore: bump version to ${newVersion}"`);
-  console.log(`Commit created for version ${newVersion}`);
+  console.warn(`Commit created for version ${newVersion}`);
 } catch (error) {
   console.error('Error creating git commit:', error.message);
 }
 
 // Suggest creating a tag
-console.log(`
+console.warn(`
 To create a tag for this version:
   git tag -a v${newVersion} -m "Version ${newVersion}"
   git push origin v${newVersion}
