@@ -13,14 +13,13 @@ on:
         default: 'staging'
         type: choice
         options:
-        - staging
-        - production
+          - staging
+          - production
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-east4
   ARTIFACT_REGISTRY_HOST: us-east4-docker.pkg.dev
-
 
 jobs:
   setup:
@@ -150,14 +149,34 @@ jobs:
           docker images
 
       - name: Push Docker image to Artifact Registry
-        run: docker push ${{ needs.setup.outputs.image_name }}
+        run: |
+          # Debug: Print the image name to see if it's properly defined
+          echo "Pushing image: ${{ needs.setup.outputs.image_name }}"
+          # Ensure image name is properly defined before pushing
+          IMAGE_NAME="${{ needs.setup.outputs.image_name }}"
+          if [ -z "$IMAGE_NAME" ]; then
+            echo "Error: Image name is empty"
+            exit 1
+          fi
+          docker push "$IMAGE_NAME"
 
       - name: Add latest tag for production
         if: needs.setup.outputs.environment == 'production'
         run: |
+          # Debug: Print the image names for tagging
+          echo "Source image: ${{ needs.setup.outputs.image_name }}"
           LATEST_TAG="${{ env.ARTIFACT_REGISTRY_HOST }}/${{ env.PROJECT_ID }}/coredatastore/coredatastore-swagger-mcp:latest"
-          docker tag ${{ needs.setup.outputs.image_name }} ${LATEST_TAG}
-          docker push ${LATEST_TAG}
+          echo "Latest tag: ${LATEST_TAG}"
+
+          # Add proper error checking
+          if [ -z "${{ needs.setup.outputs.image_name }}" ]; then
+            echo "Error: Source image name is empty"
+            exit 1
+          fi
+
+          # Tag and push with proper quoting
+          docker tag "${{ needs.setup.outputs.image_name }}" "${LATEST_TAG}"
+          docker push "${LATEST_TAG}"
 
   deploy:
     name: Deploy
