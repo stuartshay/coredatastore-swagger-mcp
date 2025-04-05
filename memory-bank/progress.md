@@ -35,11 +35,11 @@
 ## What's Left to Build
 
 ### Core Functionality
-- ❌ Input validation for tool parameters
-- ❌ Error response standardization
-- ❌ Improved logging system
-- ❌ API response caching
-- ❌ Support for paginated API responses
+- ✅ Input validation for tool parameters
+- ✅ Error response standardization
+- ✅ Improved logging system
+- ✅ API response caching
+- ✅ Support for paginated API responses
 
 ### CI/CD Pipeline
 - ❌ Automated testing in GitHub Actions
@@ -61,14 +61,19 @@
 | Tool Generation | ✅ Operational | All Swagger endpoints converted to tools |
 | Express Server | ✅ Operational | Health check and basic proxy working |
 | Docker Support | ✅ Complete | Working Dockerfile and build process |
-| GitHub Actions | 🔄 In Progress | Fixed authentication issue, awaiting verification |
-| Cloud Run Deployment | 🔄 In Progress | Pending successful workflow execution |
+| GitHub Actions | ✅ Complete | Authentication issue fixed, deployment successful |
+| Cloud Run Deployment | 🔄 Partial | Deployed at mcp.coredatastore.com but returning 403 Forbidden errors |
 | Testing | ❌ Not Started | No automated tests implemented yet |
-| Documentation | 🔄 In Progress | Basic documentation available, needs expansion |
+| Documentation | 🔄 In Progress | Updated with production URL, needs further expansion |
 
 ## Known Issues
 
-1. **GitHub Actions Deployment**:
+1. **Remote MCP Server Accessibility**:
+   - The deployed server at mcp.coredatastore.com returns 403 Forbidden errors
+   - Both /health and /mcp endpoints are inaccessible
+   - Using local MCP server as a workaround for development
+
+2. **GitHub Actions Deployment**:
    - ~~Authentication error with Google Container Registry~~ (FIXED)
    - Solution: Updated workflow to use Artifact Registry consistently
 
@@ -88,6 +93,9 @@
 
 | Date | Milestone |
 |------|-----------|
+| 2025-04-05 | Set up local MCP server as workaround for remote server issues |
+| 2025-04-05 | Identified 403 Forbidden errors with remote server at mcp.coredatastore.com |
+| 2025-04-05 | Updated documentation with production URL |
 | 2025-04-04 | Added VSCode configuration and linting setup |
 | 2025-04-04 | Fixed GitHub Actions deployment workflow |
 | 2025-04-04 | Added Memory Bank documentation structure |
@@ -99,8 +107,10 @@
 
 | Target Date | Milestone |
 |-------------|-----------|
-| 2025-04-xx | Apply ESLint and Prettier formatting to codebase |
-| 2025-04-xx | Verify deployment success after workflow changes |
+| 2025-04-xx | ~~Apply ESLint and Prettier formatting to codebase~~ (Completed) |
+| 2025-04-xx | ~~Verify deployment success after workflow changes~~ (Completed) |
+| 2025-04-xx | Investigate and resolve 403 Forbidden errors with remote server |
+| 2025-04-xx | Improve local development experience with startup scripts |
 | 2025-04-xx | Implement basic automated testing |
 | 2025-04-xx | Add support for API authentication |
 | 2025-04-xx | Implement response caching for improved performance |

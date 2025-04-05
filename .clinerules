@@ -26,11 +26,17 @@
 - API_BASE_URL: Base URL for CoreDataStore API
 - PORT: Express server port
 
+### MCP Server
+- Production URL: mcp.coredatastore.com
+- MCP Endpoint: https://mcp.coredatastore.com/mcp
+- For connecting to the MCP server, use curl with the production URL
+
 ### Google Cloud Specifics
 - Project ID: velvety-byway-327718
 - Service Account: gh-actions-navigator@velvety-byway-327718.iam.gserviceaccount.com
 - Cloud Run Service Name: coredatastore-swagger-mcp
 - Artifact Registry Repository: coredatastore
+- Deployed MCP Server URL: https://mcp.coredatastore.com
 
 ## Troubleshooting Guidelines
 
@@ -56,6 +62,26 @@
 - Ensure proper error handling middleware
 
 ## Development Practices
+
+### MCP Client Configuration
+When connecting to the MCP server, use the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "coredatastore-swagger-mcp": {
+      "autoApprove": [],
+      "disabled": false,
+      "timeout": 60,
+      "command": "curl",
+      "args": ["https://mcp.coredatastore.com/mcp"],
+      "transportType": "stdio"
+    }
+  }
+}
+```
+
+This configuration connects to the production deployment of the MCP server rather than running a local instance, which is recommended for most use cases.
 
 ### Testing
 - Manually test health endpoint at /health

@@ -9,6 +9,12 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import fetch from 'node-fetch';
 import express from 'express';
+import { ErrorHandler } from './utils/errorHandler.js';
+import { Validator } from './utils/validator.js';
+import { logger, Logger } from './utils/logger.js';
+import { defaultCache, lookupCache, reportCache } from './utils/cache.js';
+import { PaginationHelper } from './utils/pagination.js';
+import { ApiError } from './utils/apiError.js';
 
 // Default configuration
 const DEFAULT_PORT = 3500;
@@ -53,9 +59,20 @@ class SwaggerMCPServer {
 
   async init() {
     try {
-      console.error(`[SwaggerMCP] Fetching Swagger specification from: ${SWAGGER_URL}`);
-      const response = await fetch(SWAGGER_URL);
-      this.swaggerSpec = await response.json();
+      logger.info(`Fetching Swagger specification from: ${SWAGGER_URL}`);
+
+      // Use cache for the Swagger specification to improve startup time
+      const fetchSwagger = async () => {
+        const response = await fetch(SWAGGER_URL);
+        return await response.json();
+      };
+
+      // Cache the swagger spec for 1 hour
+      this.swaggerSpec = await defaultCache.getOrFetch(
+        'swagger_spec',
+        fetchSwagger,
+        60 * 60 * 1000
+      );
 
       if (!this.swaggerSpec || !this.swaggerSpec.paths) {
         throw new Error('Invalid Swagger specification');
@@ -70,42 +87,59 @@ class SwaggerMCPServer {
       // Setup proxy endpoints in Express after we have swagger spec
       this.setupExpressProxy();
 
-      console.error(
-        `[SwaggerMCP] Successfully loaded specification with ${Object.keys(this.paths).length} paths`
-      );
-      console.error(`[SwaggerMCP] API Server listening on port ${API_PORT}`);
+      logger.info(`Successfully loaded specification with ${Object.keys(this.paths).length} paths`);
+      logger.info(`API Server listening on port ${API_PORT}`);
 
       // Start the Express server
       this.startExpressServer();
     } catch (error) {
-      console.error(`[SwaggerMCP] Error initializing: ${error.message}`);
+      logger.error('Error initializing:', error);
       process.exit(1);
     }
   }
 
   setupExpressProxy() {
+    // Add logging middleware
+    this.app.use(Logger.expressMiddleware());
+
+    // Add error handling middleware at the end of the middleware chain
+    this.app.use((err, req, res, next) => ErrorHandler.expressErrorHandler(err, req, res, next));
+
     // Add a proxy middleware for specific API endpoints
     // Instead of using a wildcard route pattern that might cause path-to-regexp errors
 
     // Add a specific route for LP reports by ID
-    this.app.get('/api/LpcReport/:lpcId', async (req, res) => {
+    this.app.get('/api/LpcReport/:lpcId', async (req, res, next) => {
       try {
         const lpcId = req.params.lpcId;
         const targetUrl = `${API_BASE_URL}/api/LpcReport/${lpcId}`;
+        const cacheKey = `report_${lpcId}`;
 
-        console.error(`[SwaggerMCP] Proxying request to: GET ${targetUrl}`);
+        // Use report cache with 10 minute expiry
+        const data = await reportCache.getOrFetch(cacheKey, async () => {
+          logger.info(`Proxying request to: GET ${targetUrl}`);
 
-        const response = await fetch(targetUrl, {
-          headers: {
-            Accept: 'application/json',
-          },
+          const response = await fetch(targetUrl, {
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new ApiError(
+              `API responded with ${response.status}: ${response.statusText}`,
+              response.status
+            );
+          }
+
+          return await response.json();
         });
 
-        const data = await response.json();
-        res.json(data);
+        // Format response for possible pagination
+        const formattedResponse = PaginationHelper.formatPaginatedResponse(data);
+        res.json(formattedResponse);
       } catch (error) {
-        console.error(`[SwaggerMCP] Proxy error: ${error.message}`);
-        res.status(500).json({ error: error.message });
+        next(error); // Pass to error handler middleware
       }
     });
 
@@ -152,7 +186,9 @@ class SwaggerMCPServer {
         // Replace path parameters with values from arguments
         if (args) {
           Object.keys(args).forEach(key => {
-            url = url.replace(`{${key}}`, args[key]);
+            // Convert parameter value to string to ensure it can be used in URL
+            const paramValue = String(args[key] || '');
+            url = url.replace(`{${key}}`, paramValue);
           });
         }
 
@@ -163,7 +199,8 @@ class SwaggerMCPServer {
           Object.keys(args).forEach(key => {
             // Only add if not a path parameter
             if (!path.includes(`{${key}}`)) {
-              queryParams.append(key, args[key]);
+              // Convert parameter value to string for query params
+              queryParams.append(key, String(args[key] || ''));
             }
           });
 

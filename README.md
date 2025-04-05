@@ -5,6 +5,8 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.ai/) server that dynamically generates MCP tools from the CoreDataStore API's Swagger/OpenAPI specification. This server enables AI assistants to interact with NYC landmarks data through a standardized protocol.
 
+**Production URL:** [mcp.coredatastore.com](https://mcp.coredatastore.com)
+
 ## Overview
 
 This MCP server connects to the [CoreDataStore API](https://api.coredatastore.com/) and does the following:
@@ -69,7 +71,28 @@ The server can be configured using the following environment variables:
 
 ### Using with MCP Client
 
-Add the following configuration to your MCP client settings:
+#### Option 1: Production Server (Recommended)
+
+Use the publicly deployed MCP server:
+
+```json
+{
+  "mcpServers": {
+    "coredatastore-swagger-mcp": {
+      "autoApprove": [],
+      "disabled": false,
+      "timeout": 60,
+      "command": "curl",
+      "args": ["https://mcp.coredatastore.com/mcp"],
+      "transportType": "stdio"
+    }
+  }
+}
+```
+
+#### Option 2: Local Development
+
+For local development or customization, run your own instance:
 
 ```json
 {
@@ -103,7 +126,19 @@ docker build -t coredatastore-swagger-mcp .
 docker run -p 3500:3500 coredatastore-swagger-mcp
 ```
 
-## Deployment to Google Cloud Run
+## Deployment
+
+### Production Deployment
+
+The server is deployed and publicly available at:
+
+```
+https://mcp.coredatastore.com
+```
+
+This is a fully managed instance running on Google Cloud Run, providing access to all the CoreDataStore API capabilities through the MCP protocol.
+
+### Deploying to Google Cloud Run
 
 The repository includes a GitHub Actions workflow for deploying to Google Cloud Run. To use it:
 
