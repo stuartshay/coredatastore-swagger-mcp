@@ -246,6 +246,8 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+          project_id: ${{ env.PROJECT_ID }}
 
       - name: Set environment-specific config
         id: env-config
