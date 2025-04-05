@@ -59,11 +59,24 @@ jobs:
             echo "service_name=coredatastore-swagger-mcp" >> $GITHUB_OUTPUT
           fi
 
-          # Set basic version
+          # Set basic version from the previous step
           VERSION="${{ steps.package.outputs.version }}"
 
-          # Create image name with version and environment
-          IMAGE_NAME="${{ env.ARTIFACT_REGISTRY_HOST }}/${{ env.PROJECT_ID }}/coredatastore/coredatastore-swagger-mcp:${VERSION}-${ENVIRONMENT}"
+          # Debug outputs to see what values we have
+          echo "PROJECT_ID: ${{ env.PROJECT_ID }}"
+          echo "ARTIFACT_REGISTRY_HOST: ${{ env.ARTIFACT_REGISTRY_HOST }}"
+          echo "VERSION: ${VERSION}"
+          echo "ENVIRONMENT: ${ENVIRONMENT}"
+
+          # Create fixed image name
+          REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
+          PROJECT="${{ env.PROJECT_ID }}"
+          IMAGE_NAME="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:${VERSION}-${ENVIRONMENT}"
+
+          # Debug the constructed image name
+          echo "Generated image name: ${IMAGE_NAME}"
+
+          # Set the output
           echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
 
       - name: Set Version
@@ -89,14 +102,27 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and export Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          tags: ${{ needs.setup.outputs.image_name }}
-          build-args: |
-            APP_ENV=${{ needs.setup.outputs.environment }}
-          outputs: type=docker,dest=/tmp/docker-image.tar
+        run: |
+          # Make sure we have a valid image name
+          if [ -z "${{ needs.setup.outputs.image_name }}" ]; then
+            echo "Warning: Image name from setup is empty, using a fallback name"
+            REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
+            PROJECT="${{ env.PROJECT_ID }}"
+            # Use GitHub run number as a fallback version
+            IMAGE_NAME="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:1.0.0-${{ github.run_number }}"
+            echo "Using fallback image name: ${IMAGE_NAME}"
+          else
+            IMAGE_NAME="${{ needs.setup.outputs.image_name }}"
+            echo "Using image name from setup job: ${IMAGE_NAME}"
+          fi
+
+          # Build the Docker image
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag "${IMAGE_NAME}" \
+            --build-arg APP_ENV=${{ needs.setup.outputs.environment || 'production' }} \
+            --output type=docker,dest=/tmp/docker-image.tar \
+            .
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
@@ -150,32 +176,58 @@ jobs:
 
       - name: Push Docker image to Artifact Registry
         run: |
-          # Debug: Print the image name to see if it's properly defined
-          echo "Pushing image: ${{ needs.setup.outputs.image_name }}"
-          # Ensure image name is properly defined before pushing
-          IMAGE_NAME="${{ needs.setup.outputs.image_name }}"
-          if [ -z "$IMAGE_NAME" ]; then
-            echo "Error: Image name is empty"
+          # First check which images we have available
+          echo "Available docker images:"
+          docker images
+
+          # Get the image ID from the loaded image
+          IMAGE_ID=$(docker images --format "{{.ID}}" | head -n 1)
+
+          if [ -z "$IMAGE_ID" ]; then
+            echo "Error: No docker images found after loading"
             exit 1
           fi
-          docker push "$IMAGE_NAME"
+
+          # Create the target image name
+          if [ -z "${{ needs.setup.outputs.image_name }}" ]; then
+            # Use fallback name with run number if image_name output is empty
+            REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
+            PROJECT="${{ env.PROJECT_ID }}"
+            TARGET_IMAGE="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:1.0.0-${{ github.run_number }}"
+          else
+            TARGET_IMAGE="${{ needs.setup.outputs.image_name }}"
+          fi
+
+          echo "Using target image name: ${TARGET_IMAGE}"
+
+          # Tag the loaded image with the target name
+          docker tag "${IMAGE_ID}" "${TARGET_IMAGE}"
+
+          # Push the image
+          echo "Pushing image: ${TARGET_IMAGE}"
+          docker push "${TARGET_IMAGE}"
 
       - name: Add latest tag for production
         if: needs.setup.outputs.environment == 'production'
         run: |
-          # Debug: Print the image names for tagging
-          echo "Source image: ${{ needs.setup.outputs.image_name }}"
-          LATEST_TAG="${{ env.ARTIFACT_REGISTRY_HOST }}/${{ env.PROJECT_ID }}/coredatastore/coredatastore-swagger-mcp:latest"
-          echo "Latest tag: ${LATEST_TAG}"
+          # Get the image ID from the most recently created image
+          IMAGE_ID=$(docker images --format "{{.ID}}" | head -n 1)
 
-          # Add proper error checking
-          if [ -z "${{ needs.setup.outputs.image_name }}" ]; then
-            echo "Error: Source image name is empty"
+          if [ -z "$IMAGE_ID" ]; then
+            echo "Error: No docker images found for tagging as latest"
             exit 1
           fi
 
-          # Tag and push with proper quoting
-          docker tag "${{ needs.setup.outputs.image_name }}" "${LATEST_TAG}"
+          # Create the latest tag
+          REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
+          PROJECT="${{ env.PROJECT_ID }}"
+          LATEST_TAG="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:latest"
+
+          echo "Tagging image ${IMAGE_ID} as ${LATEST_TAG}"
+          docker tag "${IMAGE_ID}" "${LATEST_TAG}"
+
+          # Push the latest tag
+          echo "Pushing latest tag: ${LATEST_TAG}"
           docker push "${LATEST_TAG}"
 
   deploy:
