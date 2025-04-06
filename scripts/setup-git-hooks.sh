@@ -18,7 +18,6 @@ npx husky init
 echo "Creating pre-commit hook..."
 cat > .husky/pre-commit << 'EOF'
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 # Run lint-staged to check files that are about to be committed
 npx lint-staged
