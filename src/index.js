@@ -98,11 +98,14 @@ class SwaggerMCPServer {
   }
 
   setupExpressProxy() {
-    // Add logging middleware
-    this.app.use(Logger.expressMiddleware());
+    // Add logging middleware - this should be correctly typed as it's implemented in logger.js
+    const loggerMiddleware = Logger.expressMiddleware();
+    this.app.use(loggerMiddleware);
 
     // Add error handling middleware at the end of the middleware chain
-    this.app.use((err, req, res, next) => ErrorHandler.expressErrorHandler(err, req, res, next));
+    this.app.use((err, req, res, next) => {
+      ErrorHandler.expressErrorHandler(err, req, res, next);
+    });
 
     // Add a proxy middleware for specific API endpoints
     // Instead of using a wildcard route pattern that might cause path-to-regexp errors
@@ -146,7 +149,7 @@ class SwaggerMCPServer {
     this.app.use('/api', (req, res) => {
       res.status(404).json({
         error: 'Endpoint not configured in proxy',
-        message: 'This endpoint hasn\'t been explicitly configured in the swagger-mcp proxy',
+        message: "This endpoint hasn't been explicitly configured in the swagger-mcp proxy",
       });
     });
   }
@@ -367,21 +370,206 @@ class SwaggerMCPServer {
       res.json({ status: 'OK', tools: this.tools.length });
     });
 
+    // Create a dedicated MCP endpoint with a handler function
+    this.app.post('/mcp', async (req, res) => {
+      try {
+        console.error('[SwaggerMCP] Received MCP request:', req.body);
+
+        // Basic validation
+        const { jsonrpc, method, params, id } = req.body;
+
+        if (jsonrpc !== '2.0' || !method) {
+          return res.status(400).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32600,
+              message: 'Invalid Request',
+            },
+            id: id || null,
+          });
+        }
+
+        // Handle mcp.listTools
+        if (method === 'mcp.listTools') {
+          return res.json({
+            jsonrpc: '2.0',
+            result: { tools: this.tools },
+            id,
+          });
+        }
+
+        // Handle mcp.callTool
+        if (method === 'mcp.callTool') {
+          if (!params || !params.name) {
+            return res.status(400).json({
+              jsonrpc: '2.0',
+              error: {
+                code: -32602,
+                message: 'Invalid params: missing tool name',
+              },
+              id,
+            });
+          }
+
+          const tool = this.tools.find(t => t.name === params.name);
+          if (!tool) {
+            return res.json({
+              jsonrpc: '2.0',
+              error: {
+                code: -32601,
+                message: `Tool not found: ${params.name}`,
+              },
+              id,
+            });
+          }
+
+          // Execute the tool call
+          try {
+            // Get path and method
+            const path = tool.metadata?.path;
+            const method = tool.metadata?.method;
+            const toolArgs = params.arguments || {};
+
+            if (!path || !method) {
+              return res.json({
+                jsonrpc: '2.0',
+                error: {
+                  code: -32000,
+                  message: `Invalid tool metadata for: ${params.name}`,
+                },
+                id,
+              });
+            }
+
+            // Build the URL
+            let url = `${API_BASE_URL}${path}`;
+
+            // Replace path parameters
+            Object.keys(toolArgs).forEach(key => {
+              url = url.replace(`{${key}}`, String(toolArgs[key] || ''));
+            });
+
+            // Add query params for GET
+            if (method.toLowerCase() === 'get') {
+              const queryParams = new URLSearchParams();
+              Object.keys(toolArgs).forEach(key => {
+                if (!path.includes(`{${key}}`)) {
+                  queryParams.append(key, String(toolArgs[key] || ''));
+                }
+              });
+
+              const queryString = queryParams.toString();
+              if (queryString) {
+                url += `?${queryString}`;
+              }
+            }
+
+            // Setup request options
+            const options = {
+              method: method.toUpperCase(),
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+            };
+
+            // Add body for non-GET
+            if (method.toLowerCase() !== 'get') {
+              const bodyArgs = {};
+              Object.keys(toolArgs).forEach(key => {
+                if (!path.includes(`{${key}}`)) {
+                  bodyArgs[key] = toolArgs[key];
+                }
+              });
+
+              if (Object.keys(bodyArgs).length > 0) {
+                options.body = JSON.stringify(bodyArgs);
+              }
+            }
+
+            // Make the API call
+            console.error(`[SwaggerMCP] Making API call: ${method} ${url}`);
+            const response = await fetch(url, options);
+            const responseData = await response.json();
+
+            // Return formatted response
+            return res.json({
+              jsonrpc: '2.0',
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(responseData, null, 2),
+                  },
+                ],
+              },
+              id,
+            });
+          } catch (err) {
+            console.error('[SwaggerMCP] Tool execution error:', err);
+            return res.json({
+              jsonrpc: '2.0',
+              error: {
+                code: -32000,
+                message: err.message || 'Error executing tool',
+              },
+              id,
+            });
+          }
+        }
+
+        // Unsupported method
+        return res.json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32601,
+            message: `Method not found: ${method}`,
+          },
+          id,
+        });
+      } catch (error) {
+        console.error('[SwaggerMCP] MCP request error:', error);
+        return res.status(500).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: error.message || 'Internal error',
+          },
+          id: req.body?.id || null,
+        });
+      }
+    });
+
     // Start the server
     this.app.listen(API_PORT, () => {
       console.error(`[SwaggerMCP] API server is running on port ${API_PORT}`);
     });
   }
 
-  async run() {
-    await this.init();
-
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-
-    console.error('[SwaggerMCP] MCP server running on stdio');
+  // Connect to stdio in development mode
+  async setupStdioTransport() {
+    // In development or when running locally, also connect via stdio
+    if (process.env.NODE_ENV !== 'production') {
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      console.error('[SwaggerMCP] MCP server running on stdio');
+    } else {
+      console.error('[SwaggerMCP] MCP server endpoint available at /mcp');
+    }
   }
 }
+
+// Add the run method directly in the class
+SwaggerMCPServer.prototype.run = async function () {
+  // Initialize the server first
+  await this.init();
+
+  // Connect to stdio if in development mode
+  await this.setupStdioTransport();
+
+  // Now server should be running
+  console.error('[SwaggerMCP] Server is running');
+};
 
 // Start the server
 const server = new SwaggerMCPServer();
