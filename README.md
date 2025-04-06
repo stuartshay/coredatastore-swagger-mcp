@@ -2,7 +2,6 @@
 
 [![Deploy to Google Cloud Run](https://github.com/stuartshay/coredatastore-swagger-mcp/actions/workflows/deploy.yml/badge.svg)](https://github.com/stuartshay/coredatastore-swagger-mcp/actions/workflows/deploy.yml)
 
-
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.ai/) server that dynamically generates MCP tools from the CoreDataStore API's Swagger/OpenAPI specification. This server enables AI assistants to interact with NYC landmarks data through a standardized protocol.
 
 **Production URL:** [mcp.coredatastore.com](https://mcp.coredatastore.com)
@@ -49,11 +48,13 @@ npm start
 ```
 
 For a clean installation (if you're experiencing dependency issues):
+
 ```bash
 ./scripts/setup-dev.sh --clean
 ```
 
 The setup script will:
+
 - Install all dependencies
 - Verify ESLint and Prettier are correctly installed
 - Set up Git hooks for pre-commit code quality checks
@@ -63,11 +64,11 @@ The setup script will:
 
 The server can be configured using the following environment variables:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | The port on which the server will listen | `3500` |
-| `SWAGGER_URL` | URL of the Swagger/OpenAPI specification | `https://api.coredatastore.com/swagger/v1/swagger.json` |
-| `API_BASE_URL` | Base URL for the API requests | `https://api.coredatastore.com` |
+| Variable       | Description                              | Default                                                 |
+| -------------- | ---------------------------------------- | ------------------------------------------------------- |
+| `PORT`         | The port on which the server will listen | `3500`                                                  |
+| `SWAGGER_URL`  | URL of the Swagger/OpenAPI specification | `https://api.coredatastore.com/swagger/v1/swagger.json` |
+| `API_BASE_URL` | Base URL for the API requests            | `https://api.coredatastore.com`                         |
 
 ### Using with MCP Client
 
@@ -143,10 +144,11 @@ This is a fully managed instance running on Google Cloud Run, providing access t
 The repository includes a GitHub Actions workflow for deploying to Google Cloud Run. To use it:
 
 1. Set up the following secrets in your GitHub repository:
+
    - `GCP_PROJECT_ID`: Your Google Cloud project ID
    - `GCP_SA_KEY`: A service account key with permissions to deploy to Cloud Run
 
-2. Push to the main branch or manually trigger the workflow.
+2. Push to the master branch or manually trigger the workflow.
 
 ### Manually deploying to Cloud Run
 
@@ -210,6 +212,7 @@ This project uses Husky and lint-staged to enforce code quality on commit:
 2. **Setup**: Run `npm run hooks:setup` to set up the Git hooks
 
 The pre-commit hook ensures that:
+
 - Code is properly formatted with Prettier
 - ESLint rules are enforced
 - No code quality issues are committed
