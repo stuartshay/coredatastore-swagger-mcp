@@ -4,91 +4,19 @@ on:
   push:
     branches:
       - master
-      - development
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-          - staging
-          - production
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: coredatastore-swagger-mcp
   REGION: us-east4
+  DOCKER_IMAGE_TAG: 0.0.1.${{ github.run_number }}
+  IMAGE_NAME: us-east4-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/coredatastore/coredatastore-swagger-mcp:0.0.1.${{ github.run_number }}
   ARTIFACT_REGISTRY_HOST: us-east4-docker.pkg.dev
 
 jobs:
-  setup:
-    name: Setup
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.set-version.outputs.version }}
-      environment: ${{ steps.set-env.outputs.environment }}
-      service_name: ${{ steps.set-env.outputs.service_name }}
-      image_name: ${{ steps.set-env.outputs.image_name }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Read package.json
-        id: package
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Determine Environment
-        id: set-env
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            ENVIRONMENT="${{ github.event.inputs.environment }}"
-          elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-            ENVIRONMENT="production"
-          else
-            ENVIRONMENT="staging"
-          fi
-          echo "environment=${ENVIRONMENT}" >> $GITHUB_OUTPUT
-
-          if [[ "${ENVIRONMENT}" == "staging" ]]; then
-            echo "service_name=coredatastore-swagger-mcp-staging" >> $GITHUB_OUTPUT
-          else
-            echo "service_name=coredatastore-swagger-mcp" >> $GITHUB_OUTPUT
-          fi
-
-          # Set basic version from the previous step
-          VERSION="${{ steps.package.outputs.version }}"
-
-          # Debug outputs to see what values we have
-          echo "PROJECT_ID: ${{ env.PROJECT_ID }}"
-          echo "ARTIFACT_REGISTRY_HOST: ${{ env.ARTIFACT_REGISTRY_HOST }}"
-          echo "VERSION: ${VERSION}"
-          echo "ENVIRONMENT: ${ENVIRONMENT}"
-
-          # Create fixed image name
-          REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
-          PROJECT="${{ env.PROJECT_ID }}"
-          IMAGE_NAME="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:${VERSION}-${ENVIRONMENT}"
-
-          # Debug the constructed image name
-          echo "Generated image name: ${IMAGE_NAME}"
-
-          # Set the output
-          echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-
-      - name: Set Version
-        id: set-version
-        run: |
-          VERSION="${{ steps.package.outputs.version }}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Using version: ${VERSION}"
-
   build:
     name: Build
-    needs: setup
     runs-on: ubuntu-latest
 
     steps:
@@ -102,27 +30,12 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and export Docker image
-        run: |
-          # Make sure we have a valid image name
-          if [ -z "${{ needs.setup.outputs.image_name }}" ]; then
-            echo "Warning: Image name from setup is empty, using a fallback name"
-            REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
-            PROJECT="${{ env.PROJECT_ID }}"
-            # Use GitHub run number as a fallback version
-            IMAGE_NAME="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:1.0.0-${{ github.run_number }}"
-            echo "Using fallback image name: ${IMAGE_NAME}"
-          else
-            IMAGE_NAME="${{ needs.setup.outputs.image_name }}"
-            echo "Using image name from setup job: ${IMAGE_NAME}"
-          fi
-
-          # Build the Docker image
-          docker buildx build \
-            --platform linux/amd64 \
-            --tag "${IMAGE_NAME}" \
-            --build-arg APP_ENV=${{ needs.setup.outputs.environment || 'production' }} \
-            --output type=docker,dest=/tmp/docker-image.tar \
-            .
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}
+          outputs: type=docker,dest=/tmp/docker-image.tar
 
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
@@ -133,7 +46,7 @@ jobs:
 
   publish:
     name: Publish
-    needs: [setup, build]
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
@@ -175,66 +88,12 @@ jobs:
           docker images
 
       - name: Push Docker image to Artifact Registry
-        run: |
-          # First check which images we have available
-          echo "Available docker images:"
-          docker images
-
-          # Get the image ID from the loaded image
-          IMAGE_ID=$(docker images --format "{{.ID}}" | head -n 1)
-
-          if [ -z "$IMAGE_ID" ]; then
-            echo "Error: No docker images found after loading"
-            exit 1
-          fi
-
-          # Create the target image name
-          if [ -z "${{ needs.setup.outputs.image_name }}" ]; then
-            # Use fallback name with run number if image_name output is empty
-            REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
-            PROJECT="${{ env.PROJECT_ID }}"
-            TARGET_IMAGE="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:1.0.0-${{ github.run_number }}"
-          else
-            TARGET_IMAGE="${{ needs.setup.outputs.image_name }}"
-          fi
-
-          echo "Using target image name: ${TARGET_IMAGE}"
-
-          # Tag the loaded image with the target name
-          docker tag "${IMAGE_ID}" "${TARGET_IMAGE}"
-
-          # Push the image
-          echo "Pushing image: ${TARGET_IMAGE}"
-          docker push "${TARGET_IMAGE}"
-
-      - name: Add latest tag for production
-        if: needs.setup.outputs.environment == 'production'
-        run: |
-          # Get the image ID from the most recently created image
-          IMAGE_ID=$(docker images --format "{{.ID}}" | head -n 1)
-
-          if [ -z "$IMAGE_ID" ]; then
-            echo "Error: No docker images found for tagging as latest"
-            exit 1
-          fi
-
-          # Create the latest tag
-          REGISTRY="${{ env.ARTIFACT_REGISTRY_HOST }}"
-          PROJECT="${{ env.PROJECT_ID }}"
-          LATEST_TAG="${REGISTRY}/${PROJECT}/coredatastore/coredatastore-swagger-mcp:latest"
-
-          echo "Tagging image ${IMAGE_ID} as ${LATEST_TAG}"
-          docker tag "${IMAGE_ID}" "${LATEST_TAG}"
-
-          # Push the latest tag
-          echo "Pushing latest tag: ${LATEST_TAG}"
-          docker push "${LATEST_TAG}"
+        run: docker push ${{ env.IMAGE_NAME }}
 
   deploy:
     name: Deploy
-    needs: [setup, publish]
+    needs: publish
     runs-on: ubuntu-latest
-    environment: ${{ needs.setup.outputs.environment }}
 
     permissions:
       contents: 'read'
@@ -246,52 +105,17 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
-          project_id: ${{ env.PROJECT_ID }}
-
-      - name: Debug image name
-        run: |
-          echo "Service name: ${{ needs.setup.outputs.service_name }}"
-          echo "Image name: ${{ needs.setup.outputs.image_name }}"
-          # Store image name in env var for easier reference
-          IMAGE_NAME="${{ needs.setup.outputs.image_name }}"
-          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-
-      - name: Set environment-specific config
-        id: env-config
-        run: |
-          if [[ "${{ needs.setup.outputs.environment }}" == "staging" ]]; then
-            echo "swagger_url=https://api-staging.coredatastore.com/swagger/v1/swagger.json" >> $GITHUB_OUTPUT
-            echo "api_base_url=https://api-staging.coredatastore.com" >> $GITHUB_OUTPUT
-          else
-            echo "swagger_url=https://api.coredatastore.com/swagger/v1/swagger.json" >> $GITHUB_OUTPUT
-            echo "api_base_url=https://api.coredatastore.com" >> $GITHUB_OUTPUT
-          fi
 
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ needs.setup.outputs.service_name }}
+          service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          # Use explicit env var reference to ensure image is passed correctly
           image: ${{ env.IMAGE_NAME }}
-
-      - name: Create Version Tag
-        if: needs.setup.outputs.environment == 'production'
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/v${{ needs.setup.outputs.version }}',
-              sha: context.sha
-            })
+          env_vars: |
+            SWAGGER_URL=https://api.coredatastore.com/swagger/v1/swagger.json
+            API_BASE_URL=https://api.coredatastore.com
 
       - name: Show Output
-        run: |
-          echo "Deployed to: ${{ steps.deploy.outputs.url }}"
-          echo "Environment: ${{ needs.setup.outputs.environment }}"
-          echo "Version: ${{ needs.setup.outputs.version }}"
+        run: echo "${{ steps.deploy.outputs.url }}"
