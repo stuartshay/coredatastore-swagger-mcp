@@ -133,7 +133,7 @@ export class ErrorHandler {
   /**
    * Express middleware for handling errors
    */
-  static expressErrorHandler(err, req, res, next) {
+  static expressErrorHandler(err, req, res, _next) {
     const status = err.status || 500;
 
     const error = {

@@ -10,9 +10,8 @@ import {
 import fetch from 'node-fetch';
 import express from 'express';
 import { ErrorHandler } from './utils/errorHandler.js';
-import { Validator } from './utils/validator.js';
 import { logger, Logger } from './utils/logger.js';
-import { defaultCache, lookupCache, reportCache } from './utils/cache.js';
+import { defaultCache, reportCache } from './utils/cache.js';
 import { PaginationHelper } from './utils/pagination.js';
 import { ApiError } from './utils/apiError.js';
 
