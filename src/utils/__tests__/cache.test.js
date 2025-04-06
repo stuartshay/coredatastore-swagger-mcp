@@ -146,3 +146,10 @@ describe('Cache utility functions', () => {
     expect(lookupCache).not.toBe(defaultCache);
   });
 });
+
+// Clean up global cache instances after all tests
+afterAll(() => {
+  lookupCache.dispose();
+  reportCache.dispose();
+  defaultCache.dispose();
+});
