@@ -20,24 +20,24 @@ export class ErrorHandler {
    */
   static mapHttpToMcpCode(httpStatus) {
     switch (httpStatus) {
-      case 400:
-        return ErrorCode.InvalidParams;
-      case 401:
-      case 403:
-        return ErrorCode.InvalidRequest; // No specific auth error, use InvalidRequest
-      case 404:
-        return ErrorCode.InvalidRequest; // Use InvalidRequest for Not Found
-      case 408:
-      case 504:
-        return ErrorCode.RequestTimeout; // Use RequestTimeout for timeouts
-      case 429:
-        return ErrorCode.InvalidRequest; // Use InvalidRequest for rate limits
-      case 500:
-      case 502:
-      case 503:
-        return ErrorCode.InternalError;
-      default:
-        return ErrorCode.InternalError;
+    case 400:
+      return ErrorCode.InvalidParams;
+    case 401:
+    case 403:
+      return ErrorCode.InvalidRequest; // No specific auth error, use InvalidRequest
+    case 404:
+      return ErrorCode.InvalidRequest; // Use InvalidRequest for Not Found
+    case 408:
+    case 504:
+      return ErrorCode.RequestTimeout; // Use RequestTimeout for timeouts
+    case 429:
+      return ErrorCode.InvalidRequest; // Use InvalidRequest for rate limits
+    case 500:
+    case 502:
+    case 503:
+      return ErrorCode.InternalError;
+    default:
+      return ErrorCode.InternalError;
     }
   }
 

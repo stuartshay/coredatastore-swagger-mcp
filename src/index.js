@@ -146,7 +146,7 @@ class SwaggerMCPServer {
     this.app.use('/api', (req, res) => {
       res.status(404).json({
         error: 'Endpoint not configured in proxy',
-        message: "This endpoint hasn't been explicitly configured in the swagger-mcp proxy",
+        message: 'This endpoint hasn\'t been explicitly configured in the swagger-mcp proxy',
       });
     });
   }

@@ -242,11 +242,11 @@ export const defaultCache = new ResponseCache(defaultCacheOptions.default);
 // Create a utility function to select the appropriate cache
 export function getCache(type) {
   switch (type) {
-    case 'lookup':
-      return lookupCache;
-    case 'report':
-      return reportCache;
-    default:
-      return defaultCache;
+  case 'lookup':
+    return lookupCache;
+  case 'report':
+    return reportCache;
+  default:
+    return defaultCache;
   }
 }
