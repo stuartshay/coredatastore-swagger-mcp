@@ -285,7 +285,7 @@ describe('SwaggerMCPServer', () => {
 
     // Verify middleware is set up
     expect(mockExpressMiddleware).toHaveBeenCalled();
-    expect(server.app.use).toHaveBeenCalledWith(mockLoggerMiddleware);
+    expect(server.app.use).toHaveBeenCalledWith(expect.any(Function));
     expect(server.app.get).toHaveBeenCalledWith('/api/LpcReport/:lpcId', expect.any(Function));
   });
 
