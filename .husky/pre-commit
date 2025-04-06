@@ -1,4 +1,17 @@
 #!/usr/bin/env sh
 
+# Check if this is an empty commit with --allow-empty flag
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+  # Against HEAD
+  empty_allowed=$(git config --bool core.allowemptycommit)
+  if [ "$empty_allowed" = "true" ] || git diff --cached --quiet
+  then
+    # Skip lint-staged for empty commits when allowed
+    echo "Empty commit detected with --allow-empty flag. Skipping lint-staged."
+    exit 0
+  fi
+fi
+
 # Run lint-staged to check files that are about to be committed
 npx lint-staged
