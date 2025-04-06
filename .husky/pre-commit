@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
-# Run lint-staged with --allow-empty to prevent errors on empty commits
-npx lint-staged --allow-empty
+# Run lint-staged to check files that are about to be committed
+npx lint-staged
