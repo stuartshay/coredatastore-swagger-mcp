@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+// filepath: /home/vagrant/git/coredatastore-swagger-mcp/src/utils/logger.js
 /**
  * Logger module for structured logging with various levels
  */

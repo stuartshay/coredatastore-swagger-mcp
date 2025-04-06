@@ -177,48 +177,48 @@ export class PaginationHelper {
     const result = { ...params };
 
     switch (targetStyle) {
-      case 'page-limit':
-        // Transform offset/limit to page/limit
-        if (result.offset !== undefined && result.limit) {
-          result.page = Math.floor(result.offset / result.limit) + 1;
-          delete result.offset;
-        }
-        // Transform page/per_page to page/limit
-        else if (result.per_page) {
-          result.limit = result.per_page;
-          delete result.per_page;
-        }
-        break;
+    case 'page-limit':
+      // Transform offset/limit to page/limit
+      if (result.offset !== undefined && result.limit) {
+        result.page = Math.floor(result.offset / result.limit) + 1;
+        delete result.offset;
+      }
+      // Transform page/per_page to page/limit
+      else if (result.per_page) {
+        result.limit = result.per_page;
+        delete result.per_page;
+      }
+      break;
 
-      case 'offset-limit':
-        // Transform page/limit to offset/limit
-        if (result.page !== undefined && result.limit) {
-          result.offset = (result.page - 1) * result.limit;
-          delete result.page;
-        }
-        // Transform page/per_page to offset/limit
-        else if (result.page !== undefined && result.per_page) {
-          result.offset = (result.page - 1) * result.per_page;
-          result.limit = result.per_page;
-          delete result.page;
-          delete result.per_page;
-        }
-        break;
+    case 'offset-limit':
+      // Transform page/limit to offset/limit
+      if (result.page !== undefined && result.limit) {
+        result.offset = (result.page - 1) * result.limit;
+        delete result.page;
+      }
+      // Transform page/per_page to offset/limit
+      else if (result.page !== undefined && result.per_page) {
+        result.offset = (result.page - 1) * result.per_page;
+        result.limit = result.per_page;
+        delete result.page;
+        delete result.per_page;
+      }
+      break;
 
-      case 'page-per_page':
-        // Transform offset/limit to page/per_page
-        if (result.offset !== undefined && result.limit) {
-          result.page = Math.floor(result.offset / result.limit) + 1;
-          result.per_page = result.limit;
-          delete result.offset;
-          delete result.limit;
-        }
-        // Transform page/limit to page/per_page
-        else if (result.limit) {
-          result.per_page = result.limit;
-          delete result.limit;
-        }
-        break;
+    case 'page-per_page':
+      // Transform offset/limit to page/per_page
+      if (result.offset !== undefined && result.limit) {
+        result.page = Math.floor(result.offset / result.limit) + 1;
+        result.per_page = result.limit;
+        delete result.offset;
+        delete result.limit;
+      }
+      // Transform page/limit to page/per_page
+      else if (result.limit) {
+        result.per_page = result.limit;
+        delete result.limit;
+      }
+      break;
     }
 
     return result;
