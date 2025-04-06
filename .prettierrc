@@ -9,5 +9,8 @@
   "arrowParens": "avoid",
   "endOfLine": "lf",
   "quoteProps": "as-needed",
-  "proseWrap": "preserve"
+  "proseWrap": "preserve",
+  "jsxSingleQuote": true,
+  "bracketSameLine": false,
+  "embeddedLanguageFormatting": "auto"
 }

@@ -99,9 +99,11 @@ export class SwaggerMCPServer {
   }
 
   setupExpressProxy() {
-    // Add logging middleware - this should be correctly typed as it's implemented in logger.js
-    const loggerMiddleware = Logger.expressMiddleware();
-    this.app.use(loggerMiddleware);
+    // Add logging middleware - ensure it's properly formatted for Express
+    const loggerMiddlewareFunc = Logger.expressMiddleware();
+    this.app.use((req, res, next) => {
+      loggerMiddlewareFunc(req, res, next);
+    });
 
     // Add error handling middleware at the end of the middleware chain
     this.app.use((err, req, res, next) => {
@@ -150,7 +152,7 @@ export class SwaggerMCPServer {
     this.app.use('/api', (req, res) => {
       res.status(404).json({
         error: 'Endpoint not configured in proxy',
-        message: 'This endpoint hasn\'t been explicitly configured in the swagger-mcp proxy',
+        message: "This endpoint hasn't been explicitly configured in the swagger-mcp proxy",
       });
     });
   }
@@ -371,6 +373,11 @@ export class SwaggerMCPServer {
       res.json({ status: 'OK', tools: this.tools.length });
     });
 
+    // Add tools endpoint to expose available tools
+    this.app.get('/tools', (req, res) => {
+      res.json({ tools: this.tools });
+    });
+
     // Create a dedicated MCP endpoint with a handler function
     this.app.post('/mcp', async (req, res) => {
       try {
@@ -380,7 +387,7 @@ export class SwaggerMCPServer {
         const { jsonrpc, method, params, id } = req.body;
 
         if (jsonrpc !== '2.0' || !method) {
-          return res.status(400).json({
+          res.status(400).json({
             jsonrpc: '2.0',
             error: {
               code: -32600,
@@ -388,21 +395,23 @@ export class SwaggerMCPServer {
             },
             id: id || null,
           });
+          return;
         }
 
         // Handle mcp.listTools
         if (method === 'mcp.listTools') {
-          return res.json({
+          res.json({
             jsonrpc: '2.0',
             result: { tools: this.tools },
             id,
           });
+          return;
         }
 
         // Handle mcp.callTool
         if (method === 'mcp.callTool') {
           if (!params || !params.name) {
-            return res.status(400).json({
+            res.status(400).json({
               jsonrpc: '2.0',
               error: {
                 code: -32602,
@@ -410,11 +419,12 @@ export class SwaggerMCPServer {
               },
               id,
             });
+            return;
           }
 
           const tool = this.tools.find(t => t.name === params.name);
           if (!tool) {
-            return res.json({
+            res.json({
               jsonrpc: '2.0',
               error: {
                 code: -32601,
@@ -422,6 +432,7 @@ export class SwaggerMCPServer {
               },
               id,
             });
+            return;
           }
 
           // Execute the tool call
@@ -432,7 +443,7 @@ export class SwaggerMCPServer {
             const toolArgs = params.arguments || {};
 
             if (!path || !method) {
-              return res.json({
+              res.json({
                 jsonrpc: '2.0',
                 error: {
                   code: -32000,
@@ -440,6 +451,7 @@ export class SwaggerMCPServer {
                 },
                 id,
               });
+              return;
             }
 
             // Build the URL
@@ -494,7 +506,7 @@ export class SwaggerMCPServer {
             const responseData = await response.json();
 
             // Return formatted response
-            return res.json({
+            res.json({
               jsonrpc: '2.0',
               result: {
                 content: [
@@ -506,9 +518,10 @@ export class SwaggerMCPServer {
               },
               id,
             });
+            return;
           } catch (err) {
             console.error('[SwaggerMCP] Tool execution error:', err);
-            return res.json({
+            res.json({
               jsonrpc: '2.0',
               error: {
                 code: -32000,
@@ -516,11 +529,12 @@ export class SwaggerMCPServer {
               },
               id,
             });
+            return;
           }
         }
 
         // Unsupported method
-        return res.json({
+        res.json({
           jsonrpc: '2.0',
           error: {
             code: -32601,
@@ -530,7 +544,7 @@ export class SwaggerMCPServer {
         });
       } catch (error) {
         console.error('[SwaggerMCP] MCP request error:', error);
-        return res.status(500).json({
+        res.status(500).json({
           jsonrpc: '2.0',
           error: {
             code: -32000,
