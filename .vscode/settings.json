@@ -9,11 +9,29 @@
     "source.fixAll.eslint": "explicit"
   },
   "editor.formatOnPaste": false,
+  // Formatting settings that explicitly override auto-save behavior
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false
+  },
   // JavaScript settings
   "javascript.updateImportsOnFileMove.enabled": "always",
   "javascript.format.enable": false, // Let Prettier handle formatting
   "javascript.preferences.importModuleSpecifier": "relative",
   "javascript.suggestionActions.enabled": true,
+  "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
+  "javascript.format.semicolons": "insert",
+  "javascript.format.insertSpaceAfterCommaDelimiter": true,
+  // Force single quotes in JavaScript
+  "javascript.preferences.quoteStyle": "single",
+  // Prettier settings
+  "prettier.singleQuote": true,
+  "prettier.jsxSingleQuote": true,
+  "prettier.trailingComma": "es5",
+  "prettier.semi": true,
+  "prettier.useTabs": false,
   // ESLint settings
   "eslint.validate": [
     "javascript",
