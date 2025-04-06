@@ -12,17 +12,27 @@ const LOG_LEVELS = {
   ERROR: 3,
 };
 
-// Get log level from environment or default to INFO
-const currentLogLevel = process.env.LOG_LEVEL
+// This var will be initialized once and then not updated
+// In tests, we need to use jest.resetModules() to reload it
+let currentLogLevel = process.env.LOG_LEVEL
   ? LOG_LEVELS[process.env.LOG_LEVEL.toUpperCase()] || LOG_LEVELS.INFO
   : LOG_LEVELS.INFO;
+
+// For testing - allows resetting the log level without module reload
+export function setLogLevel(level) {
+  if (LOG_LEVELS[level] !== undefined) {
+    currentLogLevel = LOG_LEVELS[level];
+  }
+}
 
 /**
  * Creates a correlation ID for request tracking
  * @returns {string} A unique correlation ID
  */
-function createCorrelationId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+export function createCorrelationId() {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2);
+  return timestamp + randomPart;
 }
 
 /**
@@ -48,31 +58,44 @@ function formatLogEntry(level, message, data = {}, correlationId = null) {
 }
 
 /**
+ * List of sensitive keys that should be redacted in logs
+ */
+export const SENSITIVE_KEYS = [
+  'password',
+  'token',
+  'secret',
+  'authorization',
+  'apikey',
+  'api_key',
+  'secretkey',
+];
+
+/**
  * Sanitizes sensitive data from objects before logging
  * @param {Object} obj - Object to sanitize
  * @returns {Object} Sanitized object
  */
-function sanitizeData(obj) {
+export function sanitizeData(obj) {
   if (!obj || typeof obj !== 'object') {
     return obj;
   }
-
-  const sensitiveKeys = [
-    'password',
-    'token',
-    'secret',
-    'authorization',
-    'apiKey',
-    'api_key',
-    'key',
-  ];
 
   const result = { ...obj };
 
   for (const key of Object.keys(result)) {
     const lowerKey = key.toLowerCase();
 
-    if (sensitiveKeys.some(sensitiveKey => lowerKey.includes(sensitiveKey))) {
+    // Check if the key exactly matches or includes a sensitive key pattern
+    // Special case for 'key' alone - we don't want to redact simple 'key' properties
+    const shouldRedact = SENSITIVE_KEYS.some(sensitiveKey => {
+      // Don't redact standalone 'key' property
+      if (lowerKey === 'key') {
+        return false;
+      }
+      return lowerKey.includes(sensitiveKey);
+    });
+
+    if (shouldRedact) {
       result[key] = '[REDACTED]';
     } else if (typeof result[key] === 'object' && result[key] !== null) {
       result[key] = sanitizeData(result[key]);
