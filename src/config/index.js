@@ -14,17 +14,17 @@ const defaultConfig = {
   caching: {
     enabled: true,
     defaultTtl: 5 * 60 * 1000, // 5 minutes
-    cleanupInterval: 10 * 60 * 1000 // 10 minutes
+    cleanupInterval: 10 * 60 * 1000, // 10 minutes
   },
   cors: {
     enabled: true,
-    origin: '*'
+    origin: '*',
   },
   rateLimit: {
     enabled: false,
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
-  }
+    max: 100, // limit each IP to 100 requests per windowMs
+  },
 };
 
 // Environment-specific configurations
@@ -34,25 +34,26 @@ const configurations = {
     logLevel: 'debug',
     rateLimit: {
       ...defaultConfig.rateLimit,
-      enabled: false
-    }
+      enabled: false,
+    },
   },
 
   staging: {
     ...defaultConfig,
-    swaggerUrl: process.env.SWAGGER_URL || 'https://api-staging.coredatastore.com/swagger/v1/swagger.json',
+    swaggerUrl:
+      process.env.SWAGGER_URL || 'https://api-staging.coredatastore.com/swagger/v1/swagger.json',
     apiBaseUrl: process.env.API_BASE_URL || 'https://api-staging.coredatastore.com',
     logLevel: 'debug',
     caching: {
       ...defaultConfig.caching,
       enabled: true,
-      defaultTtl: 3 * 60 * 1000 // 3 minutes
+      defaultTtl: 3 * 60 * 1000, // 3 minutes
     },
     rateLimit: {
       ...defaultConfig.rateLimit,
       enabled: true,
-      max: 200
-    }
+      max: 200,
+    },
   },
 
   production: {
@@ -60,17 +61,17 @@ const configurations = {
     logLevel: 'info',
     caching: {
       ...defaultConfig.caching,
-      enabled: true
+      enabled: true,
     },
     cors: {
       ...defaultConfig.cors,
-      origin: ['https://mcp.coredatastore.com', 'https://api.coredatastore.com']
+      origin: ['https://mcp.coredatastore.com', 'https://api.coredatastore.com'],
     },
     rateLimit: {
       ...defaultConfig.rateLimit,
       enabled: true,
-      max: 100
-    }
+      max: 100,
+    },
   },
 
   test: {
@@ -78,10 +79,10 @@ const configurations = {
     logLevel: 'error',
     caching: {
       ...defaultConfig.caching,
-      enabled: false
+      enabled: false,
     },
-    port: 3501
-  }
+    port: 3501,
+  },
 };
 
 // Get the configuration for the current environment, falling back to development
@@ -91,15 +92,7 @@ const config = configurations[environment] || configurations.development;
 export default config;
 
 // Export individual config sections for convenience
-export const {
-  swaggerUrl,
-  apiBaseUrl,
-  port,
-  logLevel,
-  caching,
-  cors,
-  rateLimit
-} = config;
+export const { swaggerUrl, apiBaseUrl, port, logLevel, caching, cors, rateLimit } = config;
 
 // Export a helper to determine if we're in a specific environment
-export const isEnv = (env) => environment === env;
+export const isEnv = env => environment === env;
