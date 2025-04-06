@@ -19,7 +19,7 @@ npx --no-install eslint src/ --ext .js --fix
 
 # Run Prettier on all JavaScript files
 echo "Running Prettier on JavaScript files..."
-npx --no-install prettier --write "src/**/*.js"
+npx --no-install prettier --write 'src/**/*.js'
 
 # Display completion message
 echo ""
