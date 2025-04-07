@@ -63,7 +63,7 @@ We're currently focused on improving the local development experience and implem
 3. **Update Documentation**: Update relevant documentation to reflect the current state of the MCP server access.
 
 4. **Implement Automated Testing**: Now that we have the core functionality in place, we should add:
-   - Unit tests for utility classes
+   - ~~Unit tests for utility classes~~ (Completed)
    - Integration tests for API interactions
    - End-to-end tests for MCP tool execution
 

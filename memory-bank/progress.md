@@ -63,7 +63,7 @@
 | Docker Support | ✅ Complete | Working Dockerfile and build process |
 | GitHub Actions | ✅ Complete | Authentication issue fixed, deployment successful |
 | Cloud Run Deployment | ✅ Operational | Successfully deployed and accessible at mcp.coredatastore.com |
-| Testing | ❌ Not Started | No automated tests implemented yet |
+| Testing | 🔄 In Progress | Unit tests for utility classes complete, need integration and E2E tests |
 | Documentation | 🔄 In Progress | Updated with production URL, needs further expansion |
 
 ## Known Issues
