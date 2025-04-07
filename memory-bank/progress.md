@@ -44,7 +44,7 @@
 ### CI/CD Pipeline
 - ✅ Automated testing in GitHub Actions
 - ✅ Versioning strategy for releases
-- ✅ Multi-environment deployment (staging, production)
+- ❌ Multi-environment deployment (staging, production) - Reverted, to be revisited later
 - ✅ Environment-specific configuration
 
 ### Documentation
