@@ -44,7 +44,7 @@
 ### CI/CD Pipeline
 - ✅ Automated testing in GitHub Actions
 - ✅ Versioning strategy for releases
-- ✅ Multi-environment deployment (staging, production)
+- ❌ Multi-environment deployment (staging, production) - Reverted, to be revisited later
 - ✅ Environment-specific configuration
 
 ### Documentation
@@ -62,16 +62,16 @@
 | Express Server | ✅ Operational | Health check and basic proxy working |
 | Docker Support | ✅ Complete | Working Dockerfile and build process |
 | GitHub Actions | ✅ Complete | Authentication issue fixed, deployment successful |
-| Cloud Run Deployment | 🔄 Partial | Deployed at mcp.coredatastore.com but returning 403 Forbidden errors |
-| Testing | ❌ Not Started | No automated tests implemented yet |
+| Cloud Run Deployment | ✅ Operational | Successfully deployed and accessible at mcp.coredatastore.com |
+| Testing | 🔄 In Progress | Unit tests for utility classes complete, need integration and E2E tests |
 | Documentation | 🔄 In Progress | Updated with production URL, needs further expansion |
 
 ## Known Issues
 
-1. **Remote MCP Server Accessibility**:
-   - The deployed server at mcp.coredatastore.com returns 403 Forbidden errors
-   - Both /health and /mcp endpoints are inaccessible
-   - Using local MCP server as a workaround for development
+1. ~~**Remote MCP Server Accessibility**~~: (RESOLVED)
+   - ~~The deployed server at mcp.coredatastore.com returns 403 Forbidden errors~~
+   - ~~Both /health and /mcp endpoints are inaccessible~~
+   - The accessibility issues with the remote MCP server have been resolved.
 
 2. **GitHub Actions Deployment**:
    - ~~Authentication error with Google Container Registry~~ (FIXED)
@@ -86,13 +86,14 @@
    - API errors could be better formatted for MCP clients
 
 4. **Performance**:
-   - No caching mechanism for frequent API requests
+   - ~~No caching mechanism for frequent API requests~~ (IMPLEMENTED)
    - Tool generation at startup could be optimized
 
 ## Recent Milestones
 
 | Date | Milestone |
 |------|-----------|
+| 2025-04-06 | Fixed ESLint warnings and removed unused imports in test files |
 | 2025-04-05 | Set up local MCP server as workaround for remote server issues |
 | 2025-04-05 | Identified 403 Forbidden errors with remote server at mcp.coredatastore.com |
 | 2025-04-05 | Updated documentation with production URL |
@@ -107,11 +108,11 @@
 
 | Target Date | Milestone |
 |-------------|-----------|
-| 2025-04-xx | ~~Apply ESLint and Prettier formatting to codebase~~ (Completed) |
+| 2025-04-06 | ~~Apply ESLint and Prettier formatting to codebase~~ (Completed) |
 | 2025-04-xx | ~~Verify deployment success after workflow changes~~ (Completed) |
-| 2025-04-xx | Investigate and resolve 403 Forbidden errors with remote server |
+| 2025-04-07 | ~~Investigate and resolve 403 Forbidden errors with remote server~~ (Resolved) |
 | 2025-04-xx | Improve local development experience with startup scripts |
 | 2025-04-xx | Implement basic automated testing |
 | 2025-04-xx | Add support for API authentication |
-| 2025-04-xx | Implement response caching for improved performance |
+| 2025-04-xx | ~~Implement response caching for improved performance~~ (Completed) |
 | 2025-04-xx | Add comprehensive API documentation |
