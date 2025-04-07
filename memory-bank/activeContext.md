@@ -1,7 +1,7 @@
 # CoreDataStore Swagger MCP Server - Active Context
 
 ## Current Focus
-We've identified accessibility issues with the remote MCP server at `mcp.coredatastore.com`. Currently, the server is returning 403 Forbidden errors. As a result, we've switched to running the MCP server locally for development and testing purposes.
+We're currently focused on improving the local development experience and implementing automated testing for the MCP server. We've completed essential code quality improvements and resolved previous issues with the remote MCP server at `mcp.coredatastore.com`.
 
 ## Recent Changes
 1. **Local MCP Server Setup**: Due to 403 Forbidden errors from the remote server at `mcp.coredatastore.com`, we've set up the MCP server to run locally. The local server successfully fetches the Swagger specification and creates MCP tools.
@@ -42,12 +42,8 @@ We've identified accessibility issues with the remote MCP server at `mcp.coredat
 3. **Service Account Authentication**: Verified the service account has the necessary permissions to interact with Artifact Registry and Cloud Run.
 
 ## Active Issues
-1. **Remote MCP Server Accessibility**: The remote MCP server at `mcp.coredatastore.com` is returning 403 Forbidden errors for both the `/health` and `/mcp` endpoints. This suggests that either:
-   - The server is not publicly accessible anymore
-   - There are authentication requirements that we need to meet
-   - The server configuration has changed
 
-2. **Local Development Setup**: Using the local MCP server for development, which requires the server to be running whenever we want to use the MCP tools.
+1. **Local Development Setup**: Using the local MCP server for development, which requires the server to be running whenever we want to use the MCP tools.
 
 ## Recent Accomplishments
 
@@ -60,12 +56,7 @@ We've identified accessibility issues with the remote MCP server at `mcp.coredat
    - Created utility modules for all of the above
 
 ## Next Steps
-1. **Investigate Remote Server Issues**: Determine why the remote MCP server at `mcp.coredatastore.com` is returning 403 Forbidden errors. Possible actions include:
-   - Check with the server administrators about access permissions
-   - Investigate if there are new authentication requirements
-   - Verify if the server endpoints have changed
-
-2. **Enhance Local Development Experience**: Consider improving the local development setup to make it more seamless:
+1. **Enhance Local Development Experience**: Consider improving the local development setup to make it more seamless:
    - Add scripts to easily start/stop the local MCP server
    - Automate the MCP configuration process
 
@@ -106,8 +97,7 @@ We've identified accessibility issues with the remote MCP server at `mcp.coredat
 4. **Region Selection**: We're continuing to use `us-east4` for both Artifact Registry and Cloud Run services to minimize latency and data transfer costs.
 
 ## Open Questions
-1. Why is the remote MCP server at `mcp.coredatastore.com` returning 403 Forbidden errors? Has the access control changed?
-2. Should we implement authentication for our local MCP server to match the potential security requirements of the remote server?
-3. Should we implement versioning for the Docker images beyond the GitHub run number?
-4. Do we need to implement any additional authentication mechanisms for the API requests?
-5. Would it be beneficial to add resource-based access controls for the deployed service?
+1. Should we implement authentication for our local MCP server to match potential security requirements of the remote server?
+2. Should we implement versioning for the Docker images beyond the GitHub run number?
+3. Do we need to implement any additional authentication mechanisms for the API requests?
+4. Would it be beneficial to add resource-based access controls for the deployed service?
