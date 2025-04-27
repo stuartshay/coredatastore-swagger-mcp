@@ -4,30 +4,17 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
-      "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/src/index.js",
-      "runtimeArgs": ["--experimental-modules"],
-      "env": {
-        "SWAGGER_URL": "https://api.coredatastore.com/swagger/v1/swagger.json",
-        "API_BASE_URL": "https://api.coredatastore.com",
-        "PORT": "3500"
-      },
-      "console": "integratedTerminal"
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Launch with Nodemon",
-      "runtimeExecutable": "nodemon",
-      "program": "${workspaceFolder}/src/index.js",
-      "restart": true,
+      "name": "Jest Current File",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": [
+        "${fileBasename}",
+        "--config",
+        "jest.config.js"
+      ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "env": {
-        "SWAGGER_URL": "https://api.coredatastore.com/swagger/v1/swagger.json",
-        "API_BASE_URL": "https://api.coredatastore.com",
-        "PORT": "3500"
+        "PATH": "${env:HOME}/.nvm/versions/node/v22.15.0/bin:${env:PATH}"
       }
     }
   ]

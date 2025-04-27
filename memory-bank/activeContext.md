@@ -4,7 +4,14 @@
 We're currently focused on improving the local development experience and implementing automated testing for the MCP server. We've completed essential code quality improvements and resolved previous issues with the remote MCP server at `mcp.coredatastore.com`.
 
 ## Recent Changes
-1. **Local MCP Server Setup**: Due to 403 Forbidden errors from the remote server at `mcp.coredatastore.com`, we've set up the MCP server to run locally. The local server successfully fetches the Swagger specification and creates MCP tools.
+1. **File-based Logging System**: Implemented a comprehensive file-based logging system that writes all server requests and responses to log files in a dedicated logs directory. Key features include:
+   - Timestamped log file names (yyyy_mm_dd_hh_mm format) for easy sorting and identification
+   - Automatic log rotation based on configurable time intervals
+   - Exclusion of logs from source control via .gitignore
+   - Correlation IDs to track requests across the system
+   - Detailed logging of MCP requests and API calls
+
+2. **Local MCP Server Setup**: Due to 403 Forbidden errors from the remote server at `mcp.coredatastore.com`, we've set up the MCP server to run locally. The local server successfully fetches the Swagger specification and creates MCP tools.
 
 2. **Documentation Update**: Updated README.md with the production URL and instructions for using the deployed server.
 

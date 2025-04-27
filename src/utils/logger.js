@@ -1,8 +1,16 @@
-/* eslint-disable no-console */
 // filepath: /home/vagrant/git/coredatastore-swagger-mcp/src/utils/logger.js
 /**
  * Logger module for structured logging with various levels
+ * Supports both console and file-based logging with colorized output
+ *
+ * For better log viewing in VS Code, install the "Log File Highlighter" extension
+ * Extension ID: emilast.LogFileHighlighter
+ * This will add syntax highlighting to log files viewed in VS Code
  */
+
+import fs from 'fs';
+import path from 'path';
+import chalk from 'chalk';
 
 // Log levels in increasing order of severity
 const LOG_LEVELS = {
@@ -12,11 +20,104 @@ const LOG_LEVELS = {
   ERROR: 3,
 };
 
-// This var will be initialized once and then not updated
-// In tests, we need to use jest.resetModules() to reload it
-let currentLogLevel = process.env.LOG_LEVEL
-  ? LOG_LEVELS[process.env.LOG_LEVEL.toUpperCase()] || LOG_LEVELS.INFO
-  : LOG_LEVELS.INFO;
+// Configuration for logging
+const LOG_CONFIG = {
+  // Log level from environment or default to INFO
+  level: process.env.LOG_LEVEL
+    ? LOG_LEVELS[process.env.LOG_LEVEL.toUpperCase()] || LOG_LEVELS.INFO
+    : LOG_LEVELS.INFO,
+
+  // File logging options
+  file: {
+    // Whether to enable file logging (default true)
+    enabled: process.env.FILE_LOGGING !== 'false',
+    // Directory to store log files
+    directory: process.env.LOG_DIRECTORY || 'logs',
+    // Whether to also log to console when file logging is enabled
+    consoleOutput: process.env.CONSOLE_LOGGING !== 'false',
+    // Rotation interval in minutes (defaults to 60 minutes)
+    rotationInterval: parseInt(process.env.LOG_ROTATION_INTERVAL || '60', 10),
+  },
+};
+
+// Current log level
+let currentLogLevel = LOG_CONFIG.level;
+
+/**
+ * File logger to manage writing logs to files
+ */
+class FileLogger {
+  constructor() {
+    this.currentLogFile = null;
+    this.currentLogStream = null;
+    this.logDirectory = path.resolve(process.cwd(), LOG_CONFIG.file.directory);
+    this.nextRotationTime = null;
+
+    // Ensure log directory exists
+    if (!fs.existsSync(this.logDirectory)) {
+      fs.mkdirSync(this.logDirectory, { recursive: true });
+    }
+
+    // Initialize log file
+    this.rotateLogFile();
+  }
+
+  /**
+   * Get a timestamp-based filename for the log
+   * @returns {string} Formatted filename with timestamp
+   */
+  getTimestampedFilename() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+
+    return `${year}_${month}_${day}_${hour}_${minute}.log`;
+  }
+
+  /**
+   * Create a new log file with timestamped name
+   */
+  rotateLogFile() {
+    // Close existing stream if any
+    if (this.currentLogStream) {
+      this.currentLogStream.end();
+      this.currentLogStream = null;
+    }
+
+    // Create new filename and stream
+    this.currentLogFile = path.join(this.logDirectory, this.getTimestampedFilename());
+    this.currentLogStream = fs.createWriteStream(this.currentLogFile, { flags: 'a' });
+
+    // Set next rotation time
+    const now = new Date();
+    this.nextRotationTime = new Date(now.getTime() + LOG_CONFIG.file.rotationInterval * 60 * 1000);
+
+    console.info(`Logging to file: ${this.currentLogFile}`);
+  }
+
+  /**
+   * Write a log entry to the current log file
+   * @param {string} entry - Log entry to write
+   */
+  writeLog(entry) {
+    // Check if we need to rotate log file
+    const now = new Date();
+    if (now >= this.nextRotationTime) {
+      this.rotateLogFile();
+    }
+
+    // Write the entry to the file
+    if (this.currentLogStream) {
+      this.currentLogStream.write(entry + '\n');
+    }
+  }
+}
+
+// Create singleton instance of file logger
+const fileLogger = LOG_CONFIG.file.enabled ? new FileLogger() : null;
 
 // For testing - allows resetting the log level without module reload
 export function setLogLevel(level) {
@@ -46,15 +147,82 @@ export function createCorrelationId() {
 function formatLogEntry(level, message, data = {}, correlationId = null) {
   const timestamp = new Date().toISOString();
 
+  // Extract endpoint information from data if available
+  let endpoint = '';
+  if (data.url) {
+    endpoint = data.url;
+    // For MCP requests, include the method as well
+    if (data.mcp_method) {
+      endpoint = `${data.mcp_method} (${endpoint})`;
+    }
+  }
+
   const logEntry = {
     timestamp,
     level,
     message,
     correlationId: correlationId || createCorrelationId(),
+    endpoint,
     ...data,
   };
 
   return JSON.stringify(logEntry);
+}
+
+/**
+ * Format console output with colors
+ * @param {string} level - Log level
+ * @param {string} jsonString - JSON formatted log entry
+ * @returns {string} Colorized output for console
+ */
+function formatColorConsoleOutput(level, jsonString) {
+  // In test environment, return the raw JSON for testing
+  if (process.env.NODE_ENV === 'test') {
+    return jsonString;
+  }
+
+  try {
+    const entry = JSON.parse(jsonString);
+    const timestamp = chalk.gray(entry.timestamp);
+
+    // Color by level
+    let levelOutput;
+    let messageColor;
+
+    switch (level) {
+      case 'DEBUG':
+        levelOutput = chalk.blue(level);
+        messageColor = chalk.cyan;
+        break;
+      case 'INFO':
+        levelOutput = chalk.green(level);
+        messageColor = chalk.white;
+        break;
+      case 'WARN':
+        levelOutput = chalk.yellow(level);
+        messageColor = chalk.yellow;
+        break;
+      case 'ERROR':
+        levelOutput = chalk.red.bold(level);
+        messageColor = chalk.red;
+        break;
+      default:
+        levelOutput = level;
+        messageColor = chalk.white;
+    }
+
+    // Format message parts
+    const message = messageColor(entry.message);
+    const correlationId = chalk.magenta(`[${entry.correlationId || ''}]`);
+
+    // Format endpoint info if available
+    const endpoint = entry.endpoint ? chalk.cyan(`"${entry.endpoint}"`) : '';
+
+    return `${timestamp} ${levelOutput} ${correlationId} ${message} ${endpoint}`;
+  } catch (err) {
+    // Fallback to plain JSON if parsing fails
+    return jsonString;
+  }
 }
 
 /**
@@ -140,7 +308,17 @@ export class Logger {
       const cid = correlationId || this.defaultCorrelationId;
       const mergedData = { ...this.defaultMetadata, ...sanitizedData };
 
-      console.debug(formatLogEntry('DEBUG', message, mergedData, cid));
+      const formattedEntry = formatLogEntry('DEBUG', message, mergedData, cid);
+
+      // Log to file if enabled
+      if (fileLogger) {
+        fileLogger.writeLog(formattedEntry);
+      }
+
+      // Log to console if no file logging or console output is enabled alongside file logging
+      if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
+        console.debug(formatColorConsoleOutput('DEBUG', formattedEntry));
+      }
     }
   }
 
@@ -156,7 +334,17 @@ export class Logger {
       const cid = correlationId || this.defaultCorrelationId;
       const mergedData = { ...this.defaultMetadata, ...sanitizedData };
 
-      console.info(formatLogEntry('INFO', message, mergedData, cid));
+      const formattedEntry = formatLogEntry('INFO', message, mergedData, cid);
+
+      // Log to file if enabled
+      if (fileLogger) {
+        fileLogger.writeLog(formattedEntry);
+      }
+
+      // Log to console if no file logging or console output is enabled alongside file logging
+      if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
+        console.info(formatColorConsoleOutput('INFO', formattedEntry));
+      }
     }
   }
 
@@ -172,7 +360,17 @@ export class Logger {
       const cid = correlationId || this.defaultCorrelationId;
       const mergedData = { ...this.defaultMetadata, ...sanitizedData };
 
-      console.warn(formatLogEntry('WARN', message, mergedData, cid));
+      const formattedEntry = formatLogEntry('WARN', message, mergedData, cid);
+
+      // Log to file if enabled
+      if (fileLogger) {
+        fileLogger.writeLog(formattedEntry);
+      }
+
+      // Log to console if no file logging or console output is enabled alongside file logging
+      if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
+        console.warn(formatColorConsoleOutput('WARN', formattedEntry));
+      }
     }
   }
 
@@ -200,7 +398,17 @@ export class Logger {
       const cid = correlationId || this.defaultCorrelationId;
       const mergedData = { ...this.defaultMetadata, ...sanitizedData };
 
-      console.error(formatLogEntry('ERROR', message, mergedData, cid));
+      const formattedEntry = formatLogEntry('ERROR', message, mergedData, cid);
+
+      // Log to file if enabled
+      if (fileLogger) {
+        fileLogger.writeLog(formattedEntry);
+      }
+
+      // Log to console if no file logging or console output is enabled alongside file logging
+      if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
+        console.error(formatColorConsoleOutput('ERROR', formattedEntry));
+      }
     }
   }
 
@@ -217,25 +425,56 @@ export class Logger {
       // Attach logger to request object for use in route handlers
       req.logger = logger;
 
+      // Capture request body for MCP requests
+      let requestBody = null;
+      if (req.url === '/mcp' && req.method === 'POST') {
+        requestBody = req.body;
+      }
+
       // Log request
-      logger.info(`HTTP ${req.method} ${req.url}`, {
-        method: req.method,
-        url: req.url,
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-      });
+      if (requestBody && requestBody.method && requestBody.method.startsWith('mcp.')) {
+        // Log MCP request separately to provide more context
+        logger.info(`MCP Request: ${requestBody.method}`, {
+          method: req.method,
+          url: req.url,
+          mcp_method: requestBody.method,
+          mcp_params: sanitizeData(requestBody.params || {}),
+          ip: req.ip,
+          userAgent: req.get('user-agent'),
+        });
+      } else {
+        // Standard HTTP request
+        logger.info(`HTTP ${req.method} ${req.url}`, {
+          method: req.method,
+          url: req.url,
+          ip: req.ip,
+          userAgent: req.get('user-agent'),
+        });
+      }
 
       // Add response listener to log after completion
       res.on('finish', () => {
         const duration = Date.now() - start;
         const level = res.statusCode >= 400 ? 'warn' : 'info';
 
-        logger[level](`HTTP ${req.method} ${req.url} ${res.statusCode}`, {
-          method: req.method,
-          url: req.url,
-          statusCode: res.statusCode,
-          duration: `${duration}ms`,
-        });
+        if (requestBody && requestBody.method && requestBody.method.startsWith('mcp.')) {
+          // Log MCP response
+          logger[level](`MCP Response: ${requestBody.method} ${res.statusCode}`, {
+            method: req.method,
+            url: req.url,
+            mcp_method: requestBody.method,
+            statusCode: res.statusCode,
+            duration: `${duration}ms`,
+          });
+        } else {
+          // Standard HTTP response
+          logger[level](`HTTP ${req.method} ${req.url} ${res.statusCode}`, {
+            method: req.method,
+            url: req.url,
+            statusCode: res.statusCode,
+            duration: `${duration}ms`,
+          });
+        }
       });
 
       next();

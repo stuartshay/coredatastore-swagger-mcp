@@ -4,35 +4,29 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "firefox-devtools.vscode-firefox-debug",
-
     // Docker
     "ms-azuretools.vscode-docker",
-
     // API Development
     "42crunch.vscode-openapi",
     "redhat.vscode-yaml",
-
     // REST Client
     "humao.rest-client",
-
     // Git
     "eamodio.gitlens",
     "github.vscode-github-actions",
-
     // Utility
     "mikestead.dotenv",
     "christian-kohler.path-intellisense",
     "christian-kohler.npm-intellisense",
     "yzhang.markdown-all-in-one",
-
     // Node.js specific
     "wix.vscode-import-cost",
     "mgmcdermott.vscode-language-babel",
-
     // JSON
     "eriklynd.json-tools",
-
-    // Terminal
-    "tyriar.terminal-tabs"
+    // Test
+    "orta.vscode-jest",
+    // Log Viewing
+    "emilast.logfilehighlighter"
   ]
 }

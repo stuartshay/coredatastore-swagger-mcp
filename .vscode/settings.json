@@ -9,6 +9,41 @@
     "source.fixAll.eslint": "explicit"
   },
   "editor.formatOnPaste": false,
+  // Log File Highlighter settings for JSON logs
+  "logFileHighlighter.customPatterns": [
+    {
+      "pattern": "\"level\":\"DEBUG\"",
+      "foreground": "#7f848e"
+    },
+    {
+      "pattern": "\"level\":\"INFO\"",
+      "foreground": "#4e94ce"
+    },
+    {
+      "pattern": "\"level\":\"WARN\"",
+      "foreground": "#ff8000"
+    },
+    {
+      "pattern": "\"level\":\"ERROR\"",
+      "foreground": "#ff0000"
+    },
+    {
+      "pattern": "\"timestamp\":\"[^\"]*\"",
+      "foreground": "#669966"
+    },
+    {
+      "pattern": "\"correlationId\":\"[^\"]*\"",
+      "foreground": "#6a9955"
+    },
+    {
+      "pattern": "\"message\":\"[^\"]*\"",
+      "foreground": "#d4d4d4"
+    },
+    {
+      "pattern": "\"stack\":\"[^}]*\"",
+      "foreground": "#ce9178"
+    }
+  ],
   // Formatting settings that explicitly override auto-save behavior
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -19,61 +54,10 @@
   // JavaScript settings
   "javascript.updateImportsOnFileMove.enabled": "always",
   "javascript.format.enable": false, // Let Prettier handle formatting
-  "javascript.preferences.importModuleSpecifier": "relative",
-  "javascript.suggestionActions.enabled": true,
-  "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
-  "javascript.format.semicolons": "insert",
-  "javascript.format.insertSpaceAfterCommaDelimiter": true,
-  // Force single quotes in JavaScript
-  "javascript.preferences.quoteStyle": "single",
-  // Prettier settings
-  "prettier.singleQuote": true,
-  "prettier.jsxSingleQuote": true,
-  "prettier.trailingComma": "es5",
-  "prettier.semi": true,
-  "prettier.useTabs": false,
-  // ESLint settings
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
+  // Jest settings
+  "jest.shell": "/bin/zsh",
+  "jest.shellArgs": [
+    "-i"
   ],
-  "eslint.workingDirectories": [
-    {
-      "mode": "auto"
-    }
-  ],
-  "eslint.format.enable": true,
-  "eslint.alwaysShowStatus": true,
-  "eslint.options": {
-    "extensions": [
-      ".js",
-      ".jsx",
-      ".ts",
-      ".tsx"
-    ]
-  },
-  // Files settings
-  "files.eol": "\n",
-  "files.insertFinalNewline": true,
-  "files.trimTrailingWhitespace": true,
-  "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 1000,
-  // Terminal settings
-  "terminal.integrated.defaultProfile.linux": "zsh",
-  // Docker settings
-  "docker.imageBuildContextPath": ".",
-  // Search exclude
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/dist": true,
-    "**/build": true
-  },
-  // Files to exclude from explorer
-  "files.exclude": {
-    "**/.git": true,
-    "**/.DS_Store": true,
-    "**/node_modules": true
-  }
+  "jest.pathToJest": "${workspaceFolder}/npm-with-nvm.sh test --"
 }

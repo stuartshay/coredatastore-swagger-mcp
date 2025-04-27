@@ -1,8 +1,10 @@
-/* eslint-disable no-console */
 /**
  * Tests for the Logger utility
  */
 import { jest } from '@jest/globals';
+
+// Set NODE_ENV to test for testing
+process.env.NODE_ENV = 'test';
 
 // Mock Date.now to return a fixed timestamp for tests
 const originalDateNow = Date.now;
