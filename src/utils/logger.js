@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // filepath: /home/vagrant/git/coredatastore-swagger-mcp/src/utils/logger.js
 /**
  * Logger module for structured logging with various levels
@@ -37,8 +36,8 @@ const LOG_CONFIG = {
     // Whether to also log to console when file logging is enabled
     consoleOutput: process.env.CONSOLE_LOGGING !== 'false',
     // Rotation interval in minutes (defaults to 60 minutes)
-    rotationInterval: parseInt(process.env.LOG_ROTATION_INTERVAL || '60', 10)
-  }
+    rotationInterval: parseInt(process.env.LOG_ROTATION_INTERVAL || '60', 10),
+  },
 };
 
 // Current log level
@@ -94,9 +93,7 @@ class FileLogger {
 
     // Set next rotation time
     const now = new Date();
-    this.nextRotationTime = new Date(
-      now.getTime() + LOG_CONFIG.file.rotationInterval * 60 * 1000
-    );
+    this.nextRotationTime = new Date(now.getTime() + LOG_CONFIG.file.rotationInterval * 60 * 1000);
 
     console.info(`Logging to file: ${this.currentLogFile}`);
   }
@@ -179,6 +176,11 @@ function formatLogEntry(level, message, data = {}, correlationId = null) {
  * @returns {string} Colorized output for console
  */
 function formatColorConsoleOutput(level, jsonString) {
+  // In test environment, return the raw JSON for testing
+  if (process.env.NODE_ENV === 'test') {
+    return jsonString;
+  }
+
   try {
     const entry = JSON.parse(jsonString);
     const timestamp = chalk.gray(entry.timestamp);
