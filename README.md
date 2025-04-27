@@ -30,35 +30,57 @@ This MCP server connects to the [CoreDataStore API](https://api.coredatastore.co
 - Node.js 18 or higher
 - npm or yarn
 
-### Installation
+### Development Setup
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/stuartshay/coredatastore-swagger-mcp.git
+   cd coredatastore-swagger-mcp
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Set up Git hooks (for code quality):
+
+   ```bash
+   npm run hooks:setup
+   ```
+
+   This sets up Husky and lint-staged to ensure all committed code is properly linted and formatted.
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+### Code Quality Tools
+
+The project uses several tools to maintain code quality:
+
+- **ESLint**: Lints JavaScript code
+- **Prettier**: Formats code consistently
+- **Husky**: Runs pre-commit hooks
+- **lint-staged**: Runs linters on staged files
+
+Pre-commit hooks will automatically:
+
+- Run ESLint to check for code issues
+- Run Prettier to ensure consistent formatting
+- Prevent commits with linting errors
+
+You can manually run these tools with:
 
 ```bash
-# Clone the repository
-git clone https://github.com/stuartshay/coredatastore-swagger-mcp.git
-cd coredatastore-swagger-mcp
-
-# Quick setup (installs dependencies and configures everything)
-./scripts/setup-dev.sh
-
-# Make the entry point executable
-chmod +x ./src/index.js
-
-# Start the server
-npm start
+npm run lint        # Check code with ESLint
+npm run lint:fix    # Fix linting issues
+npm run format      # Format code with Prettier
+npm run format:all  # Format all code files
 ```
-
-For a clean installation (if you're experiencing dependency issues):
-
-```bash
-./scripts/setup-dev.sh --clean
-```
-
-The setup script will:
-
-- Install all dependencies
-- Verify ESLint and Prettier are correctly installed
-- Set up Git hooks for pre-commit code quality checks
-- Make sure everything is ready for development
 
 ### Environment Variables
 

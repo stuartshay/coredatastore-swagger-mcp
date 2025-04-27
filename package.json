@@ -65,6 +65,9 @@
     "*.js": [
       "eslint --fix",
       "prettier --write --single-quote"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
     ]
   },
   "engines": {
