@@ -10,7 +10,7 @@ import {
 import fetch from 'node-fetch';
 import express from 'express';
 import { ErrorHandler } from './utils/errorHandler.js';
-import { logger, Logger } from './utils/logger.js';
+import { logger, Logger, createCorrelationId, sanitizeData } from './utils/logger.js';
 import { defaultCache, reportCache } from './utils/cache.js';
 import { PaginationHelper } from './utils/pagination.js';
 import { ApiError } from './utils/apiError.js';
@@ -168,12 +168,20 @@ export class SwaggerMCPServer {
     // Handle tool call requests
     this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params;
+      const requestId = createCorrelationId();
+
+      logger.info(`MCP Tool Execution: ${name}`, {
+        tool: name,
+        arguments: args,
+        requestId
+      });
 
       try {
         // Find the tool definition
         const tool = this.tools.find(t => t.name === name);
 
         if (!tool) {
+          logger.warn(`Tool not found: ${name}`, { requestId });
           throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
         }
 
@@ -182,6 +190,11 @@ export class SwaggerMCPServer {
         const method = tool.metadata?.method;
 
         if (!path || !method) {
+          logger.error(`Invalid tool metadata for: ${name}`, {
+            tool: name,
+            metadata: tool.metadata,
+            requestId
+          });
           throw new McpError(ErrorCode.InternalError, `Invalid tool metadata for: ${name}`);
         }
 
@@ -215,7 +228,7 @@ export class SwaggerMCPServer {
           }
         }
 
-        console.error(`[SwaggerMCP] Executing API call: ${method} ${url}`);
+        logger.info(`API call for tool ${name}: ${method} ${url}`, { requestId });
 
         // Execute the API call
         const options = {
@@ -239,12 +252,29 @@ export class SwaggerMCPServer {
 
           if (Object.keys(bodyArgs).length > 0) {
             options.body = JSON.stringify(bodyArgs);
+            logger.debug(`Request body for ${name}`, {
+              body: bodyArgs,
+              requestId
+            });
           }
         }
 
         // Make the API call
+        const startTime = Date.now();
         const response = await fetch(url, options);
+        const duration = Date.now() - startTime;
         const responseData = await response.json();
+
+        logger.info(`API response for tool ${name}: ${response.status}`, {
+          statusCode: response.status,
+          duration: `${duration}ms`,
+          requestId
+        });
+
+        logger.debug(`Response data for ${name}`, {
+          data: responseData,
+          requestId
+        });
 
         return {
           content: [
@@ -255,7 +285,7 @@ export class SwaggerMCPServer {
           ],
         };
       } catch (error) {
-        console.error(`[SwaggerMCP] Error executing tool ${name}:`, error);
+        logger.error(`Error executing tool ${name}`, error, requestId);
 
         return {
           content: [
@@ -381,7 +411,12 @@ export class SwaggerMCPServer {
     // Create a dedicated MCP endpoint with a handler function
     this.app.post('/mcp', async (req, res) => {
       try {
-        console.error('[SwaggerMCP] Received MCP request:', req.body);
+        const requestId = createCorrelationId();
+        logger.info('Received MCP request', {
+          requestId,
+          method: req.body?.method,
+          params: req.body?.params ? sanitizeData(req.body.params) : null,
+        });
 
         // Basic validation
         const { jsonrpc, method, params, id } = req.body;

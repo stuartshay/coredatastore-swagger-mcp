@@ -81,10 +81,14 @@ jest.unstable_mockModule('../utils/logger.js', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
   },
   Logger: {
     expressMiddleware: jest.fn().mockReturnValue(jest.fn()),
   },
+  createCorrelationId: jest.fn().mockReturnValue('mock-correlation-id'),
+  sanitizeData: jest.fn().mockImplementation(data => data),
 }));
 
 jest.unstable_mockModule('../utils/pagination.js', () => ({
