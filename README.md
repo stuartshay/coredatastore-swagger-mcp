@@ -277,3 +277,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [CoreDataStore API](https://api.coredatastore.com/) for providing NYC landmarks data
 - [Model Context Protocol](https://modelcontextprotocol.ai/) for the standardized protocol
+
+# Testing authentication
