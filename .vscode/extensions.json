@@ -25,6 +25,8 @@
     // JSON
     "eriklynd.json-tools",
     // Test
-    "orta.vscode-jest"
+    "orta.vscode-jest",
+    // Log Viewing
+    "emilast.logfilehighlighter"
   ]
 }

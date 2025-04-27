@@ -42,6 +42,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
     "ajv": "^8.17.1",
+    "chalk": "^5.4.1",
     "express": "^5.1.0",
     "node-fetch": "^3.3.2"
   },

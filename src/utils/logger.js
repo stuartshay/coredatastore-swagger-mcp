@@ -2,11 +2,16 @@
 // filepath: /home/vagrant/git/coredatastore-swagger-mcp/src/utils/logger.js
 /**
  * Logger module for structured logging with various levels
- * Supports both console and file-based logging
+ * Supports both console and file-based logging with colorized output
+ *
+ * For better log viewing in VS Code, install the "Log File Highlighter" extension
+ * Extension ID: emilast.LogFileHighlighter
+ * This will add syntax highlighting to log files viewed in VS Code
  */
 
 import fs from 'fs';
 import path from 'path';
+import chalk from 'chalk';
 
 // Log levels in increasing order of severity
 const LOG_LEVELS = {
@@ -145,15 +150,77 @@ export function createCorrelationId() {
 function formatLogEntry(level, message, data = {}, correlationId = null) {
   const timestamp = new Date().toISOString();
 
+  // Extract endpoint information from data if available
+  let endpoint = '';
+  if (data.url) {
+    endpoint = data.url;
+    // For MCP requests, include the method as well
+    if (data.mcp_method) {
+      endpoint = `${data.mcp_method} (${endpoint})`;
+    }
+  }
+
   const logEntry = {
     timestamp,
     level,
     message,
     correlationId: correlationId || createCorrelationId(),
+    endpoint,
     ...data,
   };
 
   return JSON.stringify(logEntry);
+}
+
+/**
+ * Format console output with colors
+ * @param {string} level - Log level
+ * @param {string} jsonString - JSON formatted log entry
+ * @returns {string} Colorized output for console
+ */
+function formatColorConsoleOutput(level, jsonString) {
+  try {
+    const entry = JSON.parse(jsonString);
+    const timestamp = chalk.gray(entry.timestamp);
+
+    // Color by level
+    let levelOutput;
+    let messageColor;
+
+    switch (level) {
+      case 'DEBUG':
+        levelOutput = chalk.blue(level);
+        messageColor = chalk.cyan;
+        break;
+      case 'INFO':
+        levelOutput = chalk.green(level);
+        messageColor = chalk.white;
+        break;
+      case 'WARN':
+        levelOutput = chalk.yellow(level);
+        messageColor = chalk.yellow;
+        break;
+      case 'ERROR':
+        levelOutput = chalk.red.bold(level);
+        messageColor = chalk.red;
+        break;
+      default:
+        levelOutput = level;
+        messageColor = chalk.white;
+    }
+
+    // Format message parts
+    const message = messageColor(entry.message);
+    const correlationId = chalk.magenta(`[${entry.correlationId || ''}]`);
+
+    // Format endpoint info if available
+    const endpoint = entry.endpoint ? chalk.cyan(`"${entry.endpoint}"`) : '';
+
+    return `${timestamp} ${levelOutput} ${correlationId} ${message} ${endpoint}`;
+  } catch (err) {
+    // Fallback to plain JSON if parsing fails
+    return jsonString;
+  }
 }
 
 /**
@@ -248,7 +315,7 @@ export class Logger {
 
       // Log to console if no file logging or console output is enabled alongside file logging
       if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
-        console.debug(formattedEntry);
+        console.debug(formatColorConsoleOutput('DEBUG', formattedEntry));
       }
     }
   }
@@ -274,7 +341,7 @@ export class Logger {
 
       // Log to console if no file logging or console output is enabled alongside file logging
       if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
-        console.info(formattedEntry);
+        console.info(formatColorConsoleOutput('INFO', formattedEntry));
       }
     }
   }
@@ -300,7 +367,7 @@ export class Logger {
 
       // Log to console if no file logging or console output is enabled alongside file logging
       if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
-        console.warn(formattedEntry);
+        console.warn(formatColorConsoleOutput('WARN', formattedEntry));
       }
     }
   }
@@ -338,7 +405,7 @@ export class Logger {
 
       // Log to console if no file logging or console output is enabled alongside file logging
       if (!fileLogger || LOG_CONFIG.file.consoleOutput) {
-        console.error(formattedEntry);
+        console.error(formatColorConsoleOutput('ERROR', formattedEntry));
       }
     }
   }

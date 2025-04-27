@@ -9,6 +9,41 @@
     "source.fixAll.eslint": "explicit"
   },
   "editor.formatOnPaste": false,
+  // Log File Highlighter settings for JSON logs
+  "logFileHighlighter.customPatterns": [
+    {
+      "pattern": "\"level\":\"DEBUG\"",
+      "foreground": "#7f848e"
+    },
+    {
+      "pattern": "\"level\":\"INFO\"",
+      "foreground": "#4e94ce"
+    },
+    {
+      "pattern": "\"level\":\"WARN\"",
+      "foreground": "#ff8000"
+    },
+    {
+      "pattern": "\"level\":\"ERROR\"",
+      "foreground": "#ff0000"
+    },
+    {
+      "pattern": "\"timestamp\":\"[^\"]*\"",
+      "foreground": "#669966"
+    },
+    {
+      "pattern": "\"correlationId\":\"[^\"]*\"",
+      "foreground": "#6a9955"
+    },
+    {
+      "pattern": "\"message\":\"[^\"]*\"",
+      "foreground": "#d4d4d4"
+    },
+    {
+      "pattern": "\"stack\":\"[^}]*\"",
+      "foreground": "#ce9178"
+    }
+  ],
   // Formatting settings that explicitly override auto-save behavior
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -19,9 +54,10 @@
   // JavaScript settings
   "javascript.updateImportsOnFileMove.enabled": "always",
   "javascript.format.enable": false, // Let Prettier handle formatting
-
   // Jest settings
   "jest.shell": "/bin/zsh",
-  "jest.shellArgs": ["-i"],
+  "jest.shellArgs": [
+    "-i"
+  ],
   "jest.pathToJest": "${workspaceFolder}/npm-with-nvm.sh test --"
 }
