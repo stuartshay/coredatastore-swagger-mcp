@@ -219,7 +219,7 @@ function formatColorConsoleOutput(level, jsonString) {
     const endpoint = entry.endpoint ? chalk.cyan(`"${entry.endpoint}"`) : '';
 
     return `${timestamp} ${levelOutput} ${correlationId} ${message} ${endpoint}`;
-  } catch (err) {
+  } catch {
     // Fallback to plain JSON if parsing fails
     return jsonString;
   }

@@ -90,20 +90,17 @@ process.exit = jest.fn();
 // Mock console.error to reduce noise in tests
 console.error = jest.fn();
 
+// Increase max listeners to prevent warning
+process.setMaxListeners(20);
+
 describe('SwaggerMCPServer with SSE Transport', () => {
   let SwaggerMCPServer;
   let server;
-  // We'll still import these but not check directly since we're using unstable_mockModule
-  let SSEServerTransport;
 
   beforeAll(async () => {
     // Import the module after mocking
     const indexModule = await import('../index.js');
     SwaggerMCPServer = indexModule.SwaggerMCPServer;
-
-    // Import the mocked SSE transport
-    const sseModule = await import('@modelcontextprotocol/sdk/server/sse.js');
-    SSEServerTransport = sseModule.SSEServerTransport;
   });
 
   beforeEach(() => {
@@ -132,8 +129,8 @@ describe('SwaggerMCPServer with SSE Transport', () => {
 
   test('run calls init and setupSSEEndpoints', async () => {
     // Mock dependencies
-    jest.spyOn(server, 'init').mockResolvedValue();
-    jest.spyOn(server, 'setupSSEEndpoints').mockImplementation();
+    jest.spyOn(server, 'init').mockImplementation(() => Promise.resolve());
+    jest.spyOn(server, 'setupSSEEndpoints').mockImplementation(() => {});
 
     // Call the method
     await server.run();

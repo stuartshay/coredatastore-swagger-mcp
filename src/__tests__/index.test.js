@@ -136,7 +136,6 @@ console.error = jest.fn();
 describe('SwaggerMCPServer', () => {
   let SwaggerMCPServer;
   let McpServer;
-  let SSEServerTransport;
   let express;
   let fetch;
   let defaultCache;
@@ -157,9 +156,6 @@ describe('SwaggerMCPServer', () => {
 
     const cacheModule = await import('../utils/cache.js');
     defaultCache = cacheModule.defaultCache;
-
-    const sseModule = await import('@modelcontextprotocol/sdk/server/sse.js');
-    SSEServerTransport = sseModule.SSEServerTransport;
   });
 
   beforeEach(() => {
@@ -313,7 +309,7 @@ describe('SwaggerMCPServer', () => {
     server.init = jest.fn().mockImplementation(async () => {
       try {
         throw new Error('Network error');
-      } catch (error) {
+      } catch {
         // Do the same as the real implementation would
         process.exit(1);
       }

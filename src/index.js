@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import {} from '@modelcontextprotocol/sdk/types.js';
 import fetch from 'node-fetch';
 import express from 'express';
 import { ErrorHandler } from './utils/errorHandler.js';
@@ -207,7 +207,7 @@ export class SwaggerMCPServer {
           options.body = JSON.stringify(bodyArgs);
           logger.debug(`Request body`, {
             body: bodyArgs,
-            requestId
+            requestId,
           });
         }
       }
@@ -226,7 +226,7 @@ export class SwaggerMCPServer {
       logger.info(`API response: ${response.status}`, {
         statusCode: response.status,
         duration: `${duration}ms`,
-        requestId
+        requestId,
       });
 
       return {
@@ -256,28 +256,31 @@ export class SwaggerMCPServer {
     const createdTools = [];
 
     // First, register a resource for the Swagger documentation itself
-    this.server.resource(
-      "swagger-documentation",
-      "swagger://docs",
-      async (uri) => ({
-        contents: [{
+    this.server.resource('swagger-documentation', 'swagger://docs', async uri => ({
+      contents: [
+        {
           uri: uri.href,
-          text: `# CoreDataStore API Documentation\n\nThis MCP server provides access to the CoreDataStore API through tools generated from its Swagger specification.\n\n## Available Endpoints\n\nThe following endpoints are available as MCP tools:\n\n${Object.entries(this.paths)
+          text: `# CoreDataStore API Documentation\n\nThis MCP server provides access to the CoreDataStore API through tools generated from its Swagger specification.\n\n## Available Endpoints\n\nThe following endpoints are available as MCP tools:\n\n${Object.entries(
+            this.paths
+          )
             .map(([path, methods]) => {
               return `- ${path}\n  ${Object.entries(methods)
                 .filter(([method]) => ['get', 'post', 'put', 'delete', 'patch'].includes(method))
-                .map(([method, op]) => `  - ${method.toUpperCase()}: ${op.summary || op.description || 'No description'}`)
+                .map(
+                  ([method, op]) =>
+                    `  - ${method.toUpperCase()}: ${op.summary || op.description || 'No description'}`
+                )
                 .join('\n  ')}`;
             })
-            .join('\n\n')}`
-        }]
-      })
-    );
+            .join('\n\n')}`,
+        },
+      ],
+    }));
 
     // Then register a resource template for exploring specific endpoints
     this.server.resource(
-      "endpoint-info",
-      new ResourceTemplate("swagger://{path*}", { list: undefined }),
+      'endpoint-info',
+      new ResourceTemplate('swagger://{path*}', { list: undefined }),
       async (uri, params) => {
         const path = params.path;
         const pathInfo = path.includes('/')
@@ -286,10 +289,12 @@ export class SwaggerMCPServer {
 
         if (!pathInfo) {
           return {
-            contents: [{
-              uri: uri.href,
-              text: `# Unknown Path\n\nNo information available for path: ${path}`
-            }]
+            contents: [
+              {
+                uri: uri.href,
+                text: `# Unknown Path\n\nNo information available for path: ${path}`,
+              },
+            ],
           };
         }
 
@@ -297,19 +302,26 @@ export class SwaggerMCPServer {
           .filter(([method]) => ['get', 'post', 'put', 'delete', 'patch'].includes(method))
           .map(([method, op]) => {
             const paramsText = op.parameters
-              ? "\n\n### Parameters\n" + op.parameters
-                  .map(p => `- \`${p.name}\` (${p.in}) ${p.required ? '(required)' : ''}: ${p.description || 'No description'}`)
+              ? '\n\n### Parameters\n' +
+                op.parameters
+                  .map(
+                    p =>
+                      `- \`${p.name}\` (${p.in}) ${p.required ? '(required)' : ''}: ${p.description || 'No description'}`
+                  )
                   .join('\n')
               : '';
 
             return `## ${method.toUpperCase()}\n\n${op.summary || ''}\n\n${op.description || 'No detailed description available.'}${paramsText}`;
-          }).join('\n\n---\n\n');
+          })
+          .join('\n\n---\n\n');
 
         return {
-          contents: [{
-            uri: uri.href,
-            text: `# Path: ${path}\n\n${methodsText}`
-          }]
+          contents: [
+            {
+              uri: uri.href,
+              text: `# Path: ${path}\n\n${methodsText}`,
+            },
+          ],
         };
       }
     );
@@ -387,16 +399,17 @@ export class SwaggerMCPServer {
         const inputSchema = {
           type: 'object',
           properties,
-          required: required.length > 0 ? required : undefined
+          required: required.length > 0 ? required : undefined,
         };
 
         // Register the tool with the McpServer
         this.server.tool(
           operationId,
           inputSchema,
-          async (args) => {
+          async args => {
             // Store the metadata to use in executeApiCall
             const metadata = {
+              // eslint-disable-line no-unused-vars
               path,
               method,
               tags: operation.tags || [],
@@ -406,19 +419,21 @@ export class SwaggerMCPServer {
             return await this.executeApiCall(path, method, args);
           },
           {
-            description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`
+            description:
+              operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
           }
         );
 
         // Keep track of the tools for reference
         createdTools.push({
           name: operationId,
-          description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
+          description:
+            operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
           metadata: {
             path,
             method,
             tags: operation.tags || [],
-          }
+          },
         });
       }
     }
@@ -630,7 +645,7 @@ export class SwaggerMCPServer {
   setupSSEEndpoints() {
     // Set up the SSE endpoint to establish client connections
     this.app.get('/sse', async (req, res) => {
-      logger.info("New SSE connection request received");
+      logger.info('New SSE connection request received');
 
       const transport = new SSEServerTransport('/messages', res);
       this.transports[transport.sessionId] = transport;
@@ -638,7 +653,7 @@ export class SwaggerMCPServer {
       logger.info(`Created new SSE transport with ID: ${transport.sessionId}`);
 
       // Remove transport when connection closes
-      res.on("close", () => {
+      res.on('close', () => {
         logger.info(`SSE connection closed for ID: ${transport.sessionId}`);
         delete this.transports[transport.sessionId];
       });
@@ -661,9 +676,9 @@ export class SwaggerMCPServer {
           jsonrpc: '2.0',
           error: {
             code: -32000,
-            message: "Invalid or missing session ID",
+            message: 'Invalid or missing session ID',
           },
-          id: null
+          id: null,
         });
       }
     });

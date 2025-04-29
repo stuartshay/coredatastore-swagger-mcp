@@ -62,36 +62,36 @@ export class Validator {
 
       // Basic type checking
       switch (propSchema.type) {
-      case 'string':
-        if (typeof value !== 'string') {
-          throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be a string`);
-        }
-        break;
-      case 'number':
-        if (typeof value !== 'number') {
-          throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be a number`);
-        }
-        break;
-      case 'integer':
-        if (typeof value !== 'number' || !Number.isInteger(value)) {
-          throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be an integer`);
-        }
-        break;
-      case 'boolean':
-        if (typeof value !== 'boolean') {
-          throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be a boolean`);
-        }
-        break;
-      case 'array':
-        if (!Array.isArray(value)) {
-          throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be an array`);
-        }
-        break;
-      case 'object':
-        if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-          throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be an object`);
-        }
-        break;
+        case 'string':
+          if (typeof value !== 'string') {
+            throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be a string`);
+          }
+          break;
+        case 'number':
+          if (typeof value !== 'number') {
+            throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be a number`);
+          }
+          break;
+        case 'integer':
+          if (typeof value !== 'number' || !Number.isInteger(value)) {
+            throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be an integer`);
+          }
+          break;
+        case 'boolean':
+          if (typeof value !== 'boolean') {
+            throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be a boolean`);
+          }
+          break;
+        case 'array':
+          if (!Array.isArray(value)) {
+            throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be an array`);
+          }
+          break;
+        case 'object':
+          if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+            throw new McpError(ErrorCode.InvalidParams, `Parameter ${name} must be an object`);
+          }
+          break;
       }
     }
   }
