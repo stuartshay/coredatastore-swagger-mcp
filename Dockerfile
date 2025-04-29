@@ -1,5 +1,5 @@
 # Multi-stage build for environment-specific deployments
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Create app directory
 WORKDIR /app
@@ -19,6 +19,11 @@ COPY . .
 
 # Make the entry point script executable
 RUN chmod +x ./src/index.js
+
+# Create logs directory and set permissions
+RUN mkdir -p /app/logs && \
+    chown -R node:node /app/logs && \
+    chmod 755 /app/logs
 
 # Build argument for environment selection
 # Default to production if not specified
