@@ -409,7 +409,6 @@ export class SwaggerMCPServer {
           async args => {
             // Store the metadata to use in executeApiCall
             const metadata = {
-              // eslint-disable-line no-unused-vars
               path,
               method,
               tags: operation.tags || [],
