@@ -2,9 +2,9 @@
 
 [![codecov](https://codecov.io/gh/stuartshay/coredatastore-swagger-mcp/graph/badge.svg?token=bLeHmyza0T)](https://codecov.io/gh/stuartshay/coredatastore-swagger-mcp) [![Deploy to Google Cloud Run](https://github.com/stuartshay/coredatastore-swagger-mcp/actions/workflows/deploy.yml/badge.svg)](https://github.com/stuartshay/coredatastore-swagger-mcp/actions/workflows/deploy.yml)
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.ai/) server that dynamically generates MCP tools from the CoreDataStore API's Swagger/OpenAPI specification. This server enables AI assistants to interact with NYC landmarks data through a standardized protocol.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that dynamically generates MCP tools from the CoreDataStore API's Swagger/OpenAPI specification. This server enables AI assistants to interact with NYC landmarks data through a standardized protocol.
 
-**Production URL:** [mcp.coredatastore.com](https://mcp.coredatastore.com)
+**Production URL:** [mcp.coredatastore.com](https://mcp.coredatastore.com/health)
 
 ## Overview
 
@@ -251,6 +251,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - [CoreDataStore API](https://api.coredatastore.com/) for providing NYC landmarks data
-- [Model Context Protocol](https://modelcontextprotocol.ai/) for the standardized protocol
-
-# Testing authentication
+- [Model Context Protocol](https://modelcontextprotocol.io/introduction) for the standardized protocol
