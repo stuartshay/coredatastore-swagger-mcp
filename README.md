@@ -4,7 +4,7 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that dynamically generates MCP tools from the CoreDataStore API's Swagger/OpenAPI specification. This server enables AI assistants to interact with NYC landmarks data through a standardized protocol.
 
-**Production URL:** [mcp.coredatastore.com](https://mcp.coredatastore.com)
+**Production URL:** [mcp.coredatastore.com](https://mcp.coredatastore.com/health)
 
 ## Overview
 
