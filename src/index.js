@@ -1,12 +1,7 @@
 #!/usr/bin/env node
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ErrorCode,
-  ListToolsRequestSchema,
-  McpError,
-} from '@modelcontextprotocol/sdk/types.js';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import fetch from 'node-fetch';
 import express from 'express';
 import { ErrorHandler } from './utils/errorHandler.js';
@@ -25,34 +20,30 @@ const API_BASE_URL = process.env.API_BASE_URL || 'https://api.coredatastore.com'
 // Export the class for testing purposes
 export class SwaggerMCPServer {
   constructor() {
-    this.server = new Server(
-      {
-        name: 'coredatastore-swagger-mcp',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      }
-    );
+    // Create McpServer instance
+    this.server = new McpServer({
+      name: 'coredatastore-swagger-mcp',
+      version: '1.0.0',
+    });
 
+    // Initialize properties
     this.tools = [];
     this.paths = {};
     this.schemas = {};
     this.swaggerSpec = null;
+    this.transports = {}; // Store SSE transports by sessionId
 
-    // Create Express server for local API queries
+    // Create Express server for API queries and SSE connections
     this.app = express();
     this.app.use(express.json());
 
-    // Setup MCP handlers
-    this.setupHandlers();
-
     // Error handling
-    this.server.onerror = error => console.error('[MCP Error]', error);
     process.on('SIGINT', async () => {
-      await this.server.close();
+      // Close all transports
+      for (const sessionId in this.transports) {
+        const transport = this.transports[sessionId];
+        await this.server.disconnect(transport);
+      }
       process.exit(0);
     });
   }
@@ -157,153 +148,173 @@ export class SwaggerMCPServer {
     });
   }
 
-  setupHandlers() {
-    // Handle tool listing requests
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: this.tools,
+  // Method to execute API calls for tools
+  async executeApiCall(path, method, args, requestId = createCorrelationId()) {
+    try {
+      // Prepare URL with path parameters
+      let url = `${API_BASE_URL}${path}`;
+
+      // Replace path parameters with values from arguments
+      if (args) {
+        Object.keys(args).forEach(key => {
+          if (path.includes(`{${key}}`)) {
+            const paramValue = String(args[key] || '');
+            url = url.replace(`{${key}}`, paramValue);
+          }
+        });
+      }
+
+      // Add query parameters if method is GET
+      if (method.toLowerCase() === 'get' && args) {
+        const queryParams = new URLSearchParams();
+
+        Object.keys(args).forEach(key => {
+          // Only add if not a path parameter
+          if (!path.includes(`{${key}}`)) {
+            queryParams.append(key, String(args[key] || ''));
+          }
+        });
+
+        const queryString = queryParams.toString();
+        if (queryString) {
+          url += `?${queryString}`;
+        }
+      }
+
+      logger.info(`API call: ${method} ${url}`, { requestId });
+
+      // Execute the API call
+      const options = {
+        method: method.toUpperCase(),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
       };
-    });
 
-    // Handle tool call requests
-    this.server.setRequestHandler(CallToolRequestSchema, async request => {
-      const { name, arguments: args } = request.params;
-      const requestId = createCorrelationId();
+      // Add body for non-GET methods
+      if (method.toLowerCase() !== 'get' && args) {
+        const bodyArgs = {};
 
-      logger.info(`MCP Tool Execution: ${name}`, {
-        tool: name,
-        arguments: args,
+        // Filter out path parameters
+        Object.keys(args).forEach(key => {
+          if (!path.includes(`{${key}}`)) {
+            bodyArgs[key] = args[key];
+          }
+        });
+
+        if (Object.keys(bodyArgs).length > 0) {
+          options.body = JSON.stringify(bodyArgs);
+          logger.debug(`Request body`, {
+            body: bodyArgs,
+            requestId
+          });
+        }
+      }
+
+      // Make the API call
+      const startTime = Date.now();
+      const response = await fetch(url, options);
+      const duration = Date.now() - startTime;
+
+      if (!response.ok) {
+        throw new Error(`API responded with ${response.status}: ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+
+      logger.info(`API response: ${response.status}`, {
+        statusCode: response.status,
+        duration: `${duration}ms`,
         requestId
       });
 
-      try {
-        // Find the tool definition
-        const tool = this.tools.find(t => t.name === name);
-
-        if (!tool) {
-          logger.warn(`Tool not found: ${name}`, { requestId });
-          throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
-        }
-
-        // Get path and method from tool metadata
-        const path = tool.metadata?.path;
-        const method = tool.metadata?.method;
-
-        if (!path || !method) {
-          logger.error(`Invalid tool metadata for: ${name}`, {
-            tool: name,
-            metadata: tool.metadata,
-            requestId
-          });
-          throw new McpError(ErrorCode.InternalError, `Invalid tool metadata for: ${name}`);
-        }
-
-        // Prepare URL with path parameters
-        let url = `${API_BASE_URL}${path}`;
-
-        // Replace path parameters with values from arguments
-        if (args) {
-          Object.keys(args).forEach(key => {
-            // Convert parameter value to string to ensure it can be used in URL
-            const paramValue = String(args[key] || '');
-            url = url.replace(`{${key}}`, paramValue);
-          });
-        }
-
-        // Add query parameters if method is GET
-        if (method.toLowerCase() === 'get' && args) {
-          const queryParams = new URLSearchParams();
-
-          Object.keys(args).forEach(key => {
-            // Only add if not a path parameter
-            if (!path.includes(`{${key}}`)) {
-              // Convert parameter value to string for query params
-              queryParams.append(key, String(args[key] || ''));
-            }
-          });
-
-          const queryString = queryParams.toString();
-          if (queryString) {
-            url += `?${queryString}`;
-          }
-        }
-
-        logger.info(`API call for tool ${name}: ${method} ${url}`, { requestId });
-
-        // Execute the API call
-        const options = {
-          method: method.toUpperCase(),
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(responseData, null, 2),
           },
-        };
+        ],
+      };
+    } catch (error) {
+      logger.error(`Error executing API call`, error, requestId);
 
-        // Add body for non-GET methods
-        if (method.toLowerCase() !== 'get' && args) {
-          const bodyArgs = {};
-
-          // Filter out path parameters
-          Object.keys(args).forEach(key => {
-            if (!path.includes(`{${key}}`)) {
-              bodyArgs[key] = args[key];
-            }
-          });
-
-          if (Object.keys(bodyArgs).length > 0) {
-            options.body = JSON.stringify(bodyArgs);
-            logger.debug(`Request body for ${name}`, {
-              body: bodyArgs,
-              requestId
-            });
-          }
-        }
-
-        // Make the API call
-        const startTime = Date.now();
-        const response = await fetch(url, options);
-        const duration = Date.now() - startTime;
-        const responseData = await response.json();
-
-        logger.info(`API response for tool ${name}: ${response.status}`, {
-          statusCode: response.status,
-          duration: `${duration}ms`,
-          requestId
-        });
-
-        logger.debug(`Response data for ${name}`, {
-          data: responseData,
-          requestId
-        });
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(responseData, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error(`Error executing tool ${name}`, error, requestId);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error executing API call: ${error.message}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error executing API call: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
   }
 
   async buildTools() {
-    const tools = [];
+    const createdTools = [];
 
-    // Process each path and method in the Swagger spec
+    // First, register a resource for the Swagger documentation itself
+    this.server.resource(
+      "swagger-documentation",
+      "swagger://docs",
+      async (uri) => ({
+        contents: [{
+          uri: uri.href,
+          text: `# CoreDataStore API Documentation\n\nThis MCP server provides access to the CoreDataStore API through tools generated from its Swagger specification.\n\n## Available Endpoints\n\nThe following endpoints are available as MCP tools:\n\n${Object.entries(this.paths)
+            .map(([path, methods]) => {
+              return `- ${path}\n  ${Object.entries(methods)
+                .filter(([method]) => ['get', 'post', 'put', 'delete', 'patch'].includes(method))
+                .map(([method, op]) => `  - ${method.toUpperCase()}: ${op.summary || op.description || 'No description'}`)
+                .join('\n  ')}`;
+            })
+            .join('\n\n')}`
+        }]
+      })
+    );
+
+    // Then register a resource template for exploring specific endpoints
+    this.server.resource(
+      "endpoint-info",
+      new ResourceTemplate("swagger://{path*}", { list: undefined }),
+      async (uri, params) => {
+        const path = params.path;
+        const pathInfo = path.includes('/')
+          ? this.paths['/' + path]
+          : Object.entries(this.paths).find(([p]) => p.split('/')[1] === path)?.[1];
+
+        if (!pathInfo) {
+          return {
+            contents: [{
+              uri: uri.href,
+              text: `# Unknown Path\n\nNo information available for path: ${path}`
+            }]
+          };
+        }
+
+        const methodsText = Object.entries(pathInfo)
+          .filter(([method]) => ['get', 'post', 'put', 'delete', 'patch'].includes(method))
+          .map(([method, op]) => {
+            const paramsText = op.parameters
+              ? "\n\n### Parameters\n" + op.parameters
+                  .map(p => `- \`${p.name}\` (${p.in}) ${p.required ? '(required)' : ''}: ${p.description || 'No description'}`)
+                  .join('\n')
+              : '';
+
+            return `## ${method.toUpperCase()}\n\n${op.summary || ''}\n\n${op.description || 'No detailed description available.'}${paramsText}`;
+          }).join('\n\n---\n\n');
+
+        return {
+          contents: [{
+            uri: uri.href,
+            text: `# Path: ${path}\n\n${methodsText}`
+          }]
+        };
+      }
+    );
+
+    // Process each path and method in the Swagger spec to create tools
     for (const [path, pathItem] of Object.entries(this.paths)) {
       for (const [method, operation] of Object.entries(pathItem)) {
         // Skip non-HTTP methods
@@ -372,29 +383,48 @@ export class SwaggerMCPServer {
           }
         }
 
-        // Create the tool
-        const tool = {
-          name: operationId,
-          description:
-            operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
-          inputSchema: {
-            type: 'object',
-            properties,
-            required,
+        // Create tool input schema
+        const inputSchema = {
+          type: 'object',
+          properties,
+          required: required.length > 0 ? required : undefined
+        };
+
+        // Register the tool with the McpServer
+        this.server.tool(
+          operationId,
+          inputSchema,
+          async (args) => {
+            // Store the metadata to use in executeApiCall
+            const metadata = {
+              path,
+              method,
+              tags: operation.tags || [],
+            };
+
+            // Execute the API call using the metadata and args
+            return await this.executeApiCall(path, method, args);
           },
+          {
+            description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`
+          }
+        );
+
+        // Keep track of the tools for reference
+        createdTools.push({
+          name: operationId,
+          description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
           metadata: {
             path,
             method,
             tags: operation.tags || [],
-          },
-        };
-
-        tools.push(tool);
+          }
+        });
       }
     }
 
-    this.tools = tools;
-    console.error(`[SwaggerMCP] Created ${tools.length} tools from Swagger specification`);
+    this.tools = createdTools;
+    console.error(`[SwaggerMCP] Created ${createdTools.length} tools from Swagger specification`);
   }
 
   startExpressServer() {
@@ -596,16 +626,49 @@ export class SwaggerMCPServer {
     });
   }
 
-  // Connect to stdio in development mode
-  async setupStdioTransport() {
-    // In development or when running locally, also connect via stdio
-    if (process.env.NODE_ENV !== 'production') {
-      const transport = new StdioServerTransport();
+  // Setup SSE endpoints for remote clients
+  setupSSEEndpoints() {
+    // Set up the SSE endpoint to establish client connections
+    this.app.get('/sse', async (req, res) => {
+      logger.info("New SSE connection request received");
+
+      const transport = new SSEServerTransport('/messages', res);
+      this.transports[transport.sessionId] = transport;
+
+      logger.info(`Created new SSE transport with ID: ${transport.sessionId}`);
+
+      // Remove transport when connection closes
+      res.on("close", () => {
+        logger.info(`SSE connection closed for ID: ${transport.sessionId}`);
+        delete this.transports[transport.sessionId];
+      });
+
+      // Connect the transport to the server
       await this.server.connect(transport);
-      console.error('[SwaggerMCP] MCP server running on stdio');
-    } else {
-      console.error('[SwaggerMCP] MCP server endpoint available at /mcp');
-    }
+    });
+
+    // Handle messages from clients
+    this.app.post('/messages', async (req, res) => {
+      const sessionId = req.query.sessionId;
+      logger.info(`Received message for session: ${sessionId}`);
+
+      const transport = this.transports[sessionId];
+      if (transport) {
+        await transport.handlePostMessage(req, res, req.body);
+      } else {
+        logger.error(`No transport found for sessionId: ${sessionId}`);
+        res.status(400).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: "Invalid or missing session ID",
+          },
+          id: null
+        });
+      }
+    });
+
+    logger.info('SSE endpoints configured for remote client access');
   }
 }
 
@@ -614,11 +677,11 @@ SwaggerMCPServer.prototype.run = async function () {
   // Initialize the server first
   await this.init();
 
-  // Connect to stdio if in development mode
-  await this.setupStdioTransport();
+  // Setup SSE endpoints for remote clients
+  this.setupSSEEndpoints();
 
   // Now server should be running
-  console.error('[SwaggerMCP] Server is running');
+  console.error('[SwaggerMCP] Server is running with SSE transport enabled');
 };
 
 // Start the server

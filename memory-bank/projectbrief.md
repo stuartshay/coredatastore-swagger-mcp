@@ -12,11 +12,12 @@ CoreDataStore Swagger MCP is a Model Context Protocol (MCP) server that dynamica
 
 ## Key Requirements
 - Dynamic tool generation based on Swagger/OpenAPI specification
-- MCP-compliant server implementation
-- Express server for local API queries and proxy functionality
+- MCP-compliant server implementation using SSE transport protocol
+- Express server for remote API queries and proxy functionality
 - Containerization with Docker
 - Automated deployment to Google Cloud Run
 - Health check endpoints for monitoring
+- Remote access for AI assistant integration
 
 ## Success Metrics
 - Successfully generated MCP tools from all relevant API endpoints

@@ -60,7 +60,7 @@
 | MCP Server | ✅ Operational | Basic functionality implemented |
 | Tool Generation | ✅ Operational | All Swagger endpoints converted to tools |
 | Express Server | ✅ Operational | Health check and basic proxy working |
-| Docker Support | ✅ Complete | Working Dockerfile and build process |
+| Docker Support | ✅ Complete | Docker configuration adjusted to fix permissions issue |
 | GitHub Actions | ✅ Complete | Authentication issue fixed, deployment successful |
 | Cloud Run Deployment | ✅ Operational | Successfully deployed and accessible at mcp.coredatastore.com |
 | Testing | 🔄 In Progress | Unit tests for utility classes complete, need integration and E2E tests |
@@ -73,19 +73,23 @@
    - ~~Both /health and /mcp endpoints are inaccessible~~
    - The accessibility issues with the remote MCP server have been resolved.
 
-2. **GitHub Actions Deployment**:
+2. ~~**Docker Configuration**~~: (RESOLVED)
+   - ~~Permission denied error when creating logs directory in container~~
+   - Fixed by creating logs directory during build and setting proper permissions
+
+3. **GitHub Actions Deployment**:
    - ~~Authentication error with Google Container Registry~~ (FIXED)
    - Solution: Updated workflow to use Artifact Registry consistently
 
-2. **Swagger Processing**:
+4. **Swagger Processing**:
    - Some complex schema types may not be properly converted to tool input schemas
    - Limited support for nested objects in parameters
 
-3. **Error Handling**:
+5. **Error Handling**:
    - Basic error handling implemented, but not comprehensive
    - API errors could be better formatted for MCP clients
 
-4. **Performance**:
+6. **Performance**:
    - ~~No caching mechanism for frequent API requests~~ (IMPLEMENTED)
    - Tool generation at startup could be optimized
 
@@ -93,6 +97,7 @@
 
 | Date | Milestone |
 |------|-----------|
+| 2025-04-29 | Fixed Docker permissions issue for logs directory |
 | 2025-04-06 | Fixed ESLint warnings and removed unused imports in test files |
 | 2025-04-05 | Set up local MCP server as workaround for remote server issues |
 | 2025-04-05 | Identified 403 Forbidden errors with remote server at mcp.coredatastore.com |
@@ -108,6 +113,7 @@
 
 | Target Date | Milestone |
 |-------------|-----------|
+| 2025-04-30 | Test the updated Docker configuration with logs directory fix |
 | 2025-04-06 | ~~Apply ESLint and Prettier formatting to codebase~~ (Completed) |
 | 2025-04-xx | ~~Verify deployment success after workflow changes~~ (Completed) |
 | 2025-04-07 | ~~Investigate and resolve 403 Forbidden errors with remote server~~ (Resolved) |

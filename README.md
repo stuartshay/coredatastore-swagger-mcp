@@ -105,33 +105,8 @@ Use the publicly deployed MCP server:
       "autoApprove": [],
       "disabled": false,
       "timeout": 60,
-      "command": "curl",
-      "args": ["https://mcp.coredatastore.com/mcp"],
-      "transportType": "stdio"
-    }
-  }
-}
-```
-
-#### Option 2: Local Development
-
-For local development or customization, run your own instance:
-
-```json
-{
-  "mcpServers": {
-    "coredatastore-swagger-mcp": {
-      "autoApprove": [],
-      "disabled": false,
-      "timeout": 60,
-      "command": "node",
-      "args": ["path/to/coredatastore-swagger-mcp/src/index.js"],
-      "env": {
-        "SWAGGER_URL": "https://api.coredatastore.com/swagger/v1/swagger.json",
-        "API_BASE_URL": "https://api.coredatastore.com",
-        "PORT": "3500"
-      },
-      "transportType": "stdio"
+      "url": "https://mcp.coredatastore.com/sse",
+      "transportType": "sse"
     }
   }
 }

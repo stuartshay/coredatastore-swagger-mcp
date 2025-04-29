@@ -6,12 +6,14 @@ The CoreDataStore Swagger MCP server follows a modular architecture with the fol
 
 ```mermaid
 graph TD
-    Client[MCP Client] <--> MCPServer[MCP Server Layer]
+    RemoteClient[Remote MCP Client] <--> SSE[SSE Transport]
+    SSE <--> MCPServer[MCP Server Layer]
     MCPServer <--> ToolGen[Tool Generator]
     ToolGen <--> SwaggerInteg[Swagger Integration]
     MCPServer <--> ExpressServer[Express Server]
     ExpressServer <--> CoreAPI[CoreDataStore API]
     SwaggerInteg <--> SwaggerSpec[Swagger Specification]
+    ExpressServer <--> SSE
 ```
 
 ## Key Components
@@ -20,7 +22,8 @@ graph TD
 - Implements the Model Context Protocol standard
 - Handles tool listing and tool execution requests
 - Uses the `@modelcontextprotocol/sdk` package
-- Communicates with clients via StdioServerTransport
+- Communicates with clients via SSEServerTransport
+- Maintains session management for remote clients
 - Maintains metadata about available tools
 
 ### 2. Express Server
