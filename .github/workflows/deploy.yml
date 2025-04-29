@@ -116,7 +116,7 @@ jobs:
           env_vars: |
             SWAGGER_URL=https://api.coredatastore.com/swagger/v1/swagger.json
             API_BASE_URL=https://api.coredatastore.com
-          flags: '--memory 1Gi --allow-unauthenticated'
+          flags: '--memory 1Gi --port 3500 --allow-unauthenticated'
 
       - name: Show Output
         run: echo "${{ steps.deploy.outputs.url }}"
