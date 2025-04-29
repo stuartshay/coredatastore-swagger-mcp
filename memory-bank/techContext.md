@@ -10,9 +10,11 @@
 - **Swagger/OpenAPI**: API specification standard used to generate tools
 
 ### Key Dependencies
-- **@modelcontextprotocol/sdk**: MCP server implementation
+- **@modelcontextprotocol/sdk**: MCP server implementation with SSE transport support
 - **express**: HTTP server framework
 - **node-fetch**: HTTP client for API requests
+- **winston**: Logging framework for application logging
+- **morgan**: HTTP request logging middleware
 - **nodemon**: Development tool for hot reloading (dev only)
 - **eslint**: Code quality and style checking (dev only)
 
@@ -57,11 +59,12 @@ docker run -p 3500:3500 coredatastore-swagger-mcp
 
 ## Technical Constraints
 
-### MCP Protocol Limitations
-- Limited to tool-based interactions
-- No streaming responses supported
+### MCP Protocol Configuration
+- Supports tool-based interactions
+- Implements SSE (Server-Sent Events) transport protocol
+- Enables remote client connections
+- Maintains persistent sessions for clients
 - No direct file upload/download capabilities
-- Requires a stdio transport for communication
 
 ### API Integration Limitations
 - Dependent on stable Swagger specification

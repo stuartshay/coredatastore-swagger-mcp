@@ -1,7 +1,7 @@
 # CoreDataStore Swagger MCP Server - Active Context
 
 ## Current Focus
-We're currently focused on improving the local development experience and implementing automated testing for the MCP server. We've completed essential code quality improvements and resolved previous issues with the remote MCP server at `mcp.coredatastore.com`.
+We're currently focused on converting the CoreDataStore Swagger MCP server to use SSE transport protocol instead of StdioServerTransport to enable remote access functionality. This will allow the server to function as a fully-featured remote MCP server that can be accessed by AI assistants like Cline through the SSE protocol.
 
 ## Recent Changes
 1. **File-based Logging System**: Implemented a comprehensive file-based logging system that writes all server requests and responses to log files in a dedicated logs directory. Key features include:
@@ -85,23 +85,28 @@ We're currently focused on improving the local development experience and implem
    - Add monitoring and analytics for tool usage
 
 ## Current Decisions
-1. **Local MCP Server**: We've decided to use a locally running MCP server for development and testing purposes, due to issues accessing the remote server.
+1. **SSE Transport Protocol**: We've decided to implement the SSE transport protocol in place of the current StdioServerTransport to enable remote access functionality:
+   - This will allow AI assistants to connect to the MCP server remotely
+   - No authentication will be implemented in the initial version since the API is read-only
+   - Standard logging will be maintained for SSE connections
+   - The server will continue to run on port 3500 to avoid conflicts with other services
 
-2. **MCP Client Configuration**: Updated the MCP client configuration to use the local server rather than the remote one:
+2. **Remote MCP Client Configuration**: Once implemented, clients can connect to the server using this configuration:
    ```json
    "coredatastore-swagger-mcp": {
      "autoApprove": [],
      "disabled": false,
      "timeout": 60,
-     "command": "node",
-     "args": ["/home/vagrant/git/coredatastore-swagger-mcp/src/index.js"],
-     "transportType": "stdio"
+     "url": "http://node-2.internal:3500/sse",
+     "transportType": "sse"
    }
    ```
 
-3. **Google Artifact Registry**: We're still using Google Artifact Registry for Docker images when deploying, as it's Google's recommended and more feature-rich container registry service.
+3. **McpServer Implementation**: We'll migrate from the older Server class to the newer McpServer class from the MCP SDK, which provides better support for the SSE transport protocol.
 
-4. **Region Selection**: We're continuing to use `us-east4` for both Artifact Registry and Cloud Run services to minimize latency and data transfer costs.
+4. **Google Artifact Registry**: We're still using Google Artifact Registry for Docker images when deploying, as it's Google's recommended and more feature-rich container registry service.
+
+5. **Region Selection**: We're continuing to use `us-east4` for both Artifact Registry and Cloud Run services to minimize latency and data transfer costs.
 
 ## Open Questions
 1. Should we implement authentication for our local MCP server to match potential security requirements of the remote server?
